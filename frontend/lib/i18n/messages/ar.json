@@ -247,5 +247,101 @@
       "roadmap_updated": "عرض خارطة الطريق",
       "cv_feedback_complete": "عرض التقييم"
     }
+  },
+  "settings": {
+    "profile": {
+      "title": "الملف الشخصي والهدف",
+      "description": "ملخص سريع — عدّل التفاصيل الكاملة في صفحة ملفك الشخصي.",
+      "loadError": "تعذّر تحميل ملفك الشخصي",
+      "backgroundLabel": "الخلفية",
+      "educationLabel": "التعليم",
+      "experienceLabel": "الخبرة",
+      "skillsLabel": "المهارات",
+      "notSet": "لم تُحدَّد بعد",
+      "skillCount": "{{count}} مهارة مدرجة",
+      "activeGoal": "الهدف النشط",
+      "noGoal": "لا يوجد هدف نشط بعد",
+      "editLink": "تعديل الملف الشخصي والهدف"
+    },
+    "account": {
+      "title": "الحساب",
+      "description": "هويتك، تديرها Clerk.",
+      "loadError": "تعذّر تحميل حسابك",
+      "email": "البريد الإلكتروني",
+      "memberSince": "عضو منذ"
+    },
+    "subscription": {
+      "title": "الاشتراك والفوترة",
+      "description": "أدر خطتك وشاهد ما استفدته منها.",
+      "loadError": "تعذّر تحميل اشتراكك",
+      "tier": { "free": "مجاني", "paid": "مدفوع" },
+      "status": { "active": "نشط", "canceled": "ملغى" },
+      "cancellationReason": "سبب الإلغاء",
+      "cancelReasonLabel": "سبب الإلغاء (اختياري)",
+      "cancelReasonPlaceholder": "أخبرنا بالسبب، إن أحببت…",
+      "cancel": "إلغاء الاشتراك",
+      "cancelling": "جارٍ الإلغاء…",
+      "cancelError": "تعذّر إلغاء اشتراكك",
+      "cancelNote": "يسري فورًا لأغراض السجلات. تبقى بياناتك محفوظة ولا يُحذف حسابك.",
+      "recapTitle": "ملخص التجديد",
+      "recapMemberSince": "عضو منذ",
+      "recapRoadmapCompleted": "خطوات خارطة الطريق المكتملة",
+      "recapSkillsAddressed": "المهارات المعالجة",
+      "recapCvRounds": "جولات تقييم السيرة الذاتية"
+    },
+    "notifications": {
+      "title": "تفضيلات الإشعارات",
+      "description": "الفئات المكتومة لا تُرسل أبدًا.",
+      "loadError": "تعذّر تحميل تفضيلات إشعاراتك",
+      "muted": "مكتومة",
+      "enabled": "مفعّلة",
+      "mute": "كتم",
+      "unmute": "إلغاء الكتم",
+      "updating": "جارٍ التحديث…"
+    },
+    "preferences": {
+      "title": "التفضيلات",
+      "description": "محفوظة عبر الجلسات، على أي جهاز.",
+      "themeLabel": "المظهر"
+    },
+    "privacy": {
+      "title": "الخصوصية والبيانات",
+      "description": "كل ما يُستخدم لتخصيص تجربتك — اطّلع عليه، أو امسحه.",
+      "loadError": "تعذّر تحميل ملخص بياناتك",
+      "profilePresent": "بيانات الملف الشخصي",
+      "present": "موجودة",
+      "notPresent": "غير محددة",
+      "goals": "الأهداف المحددة",
+      "analyses": "تحليلات الفجوة المهارية",
+      "roadmaps": "خرائط الطريق",
+      "cvRounds": "جولات تقييم السيرة الذاتية",
+      "notificationsCount": "الإشعارات",
+      "subscriptionTier": "فئة الاشتراك",
+      "none": "لا شيء",
+      "policyLink": "قراءة سياسة الخصوصية",
+      "clearTitle": "مسح بيانات الملف الشخصي",
+      "clearDescription": "يمسح خلفيتك وتعليمك وخبرتك ومهاراتك. لا يزيل التحليلات أو خرائط الطريق أو تقييمات السيرة الذاتية التي أُنشئت بالفعل.",
+      "clearAction": "مسح بيانات الملف الشخصي",
+      "clearing": "جارٍ المسح…",
+      "clearConfirmTitle": "مسح بيانات ملفك الشخصي؟",
+      "clearConfirmDescription": "هذا يزيل خلفيتك وتعليمك وخبرتك ومهاراتك. لا يمكن التراجع عن هذا.",
+      "clearError": "تعذّر مسح بيانات ملفك الشخصي",
+      "clearSuccess": "تم مسح بيانات ملفك الشخصي."
+    },
+    "security": {
+      "title": "الأمان",
+      "description": "تُدار المصادقة عبر Clerk — كلمة مرورك وطرق تسجيل الدخول تُدار هناك، وليست مخزنة لدى أوربت.",
+      "managedByClerk": "تسجيل دخولك مُدار ومؤمَّن عبر Clerk",
+      "signOut": "تسجيل الخروج من هذا الجهاز"
+    },
+    "dangerZone": {
+      "title": "منطقة الخطر",
+      "description": "يحذف حسابك نهائيًا وكل بيانات مرتبطة به — الملف الشخصي، الأهداف، تحليلات الفجوة المهارية، خرائط الطريق، تقييمات السيرة الذاتية، الإشعارات، والاشتراك. لا يمكن التراجع عن هذا.",
+      "deleteAction": "حذف حسابي",
+      "confirmLabel": "اكتب {{email}} للتأكيد",
+      "confirmAction": "حذف حسابي نهائيًا",
+      "deleting": "جارٍ الحذف…",
+      "deleteError": "تعذّر حذف حسابك"
+    }
   }
 }

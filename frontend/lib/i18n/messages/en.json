@@ -247,5 +247,101 @@
       "roadmap_updated": "View roadmap",
       "cv_feedback_complete": "View feedback"
     }
+  },
+  "settings": {
+    "profile": {
+      "title": "Profile & goal",
+      "description": "A quick summary — edit the full details on your Profile page.",
+      "loadError": "Couldn't load your profile",
+      "backgroundLabel": "Background",
+      "educationLabel": "Education",
+      "experienceLabel": "Experience",
+      "skillsLabel": "Skills",
+      "notSet": "Not set yet",
+      "skillCount": "{{count}} skills listed",
+      "activeGoal": "Active goal",
+      "noGoal": "No active goal yet",
+      "editLink": "Edit profile & goal"
+    },
+    "account": {
+      "title": "Account",
+      "description": "Your identity, managed by Clerk.",
+      "loadError": "Couldn't load your account",
+      "email": "Email",
+      "memberSince": "Member since"
+    },
+    "subscription": {
+      "title": "Subscription & billing",
+      "description": "Manage your plan and see what you've gotten out of it.",
+      "loadError": "Couldn't load your subscription",
+      "tier": { "free": "Free", "paid": "Paid" },
+      "status": { "active": "Active", "canceled": "Canceled" },
+      "cancellationReason": "Cancellation reason",
+      "cancelReasonLabel": "Reason for cancelling (optional)",
+      "cancelReasonPlaceholder": "Tell us why, if you'd like…",
+      "cancel": "Cancel subscription",
+      "cancelling": "Cancelling…",
+      "cancelError": "Couldn't cancel your subscription",
+      "cancelNote": "Takes effect immediately for record-keeping. Your data is retained and your account is not deleted.",
+      "recapTitle": "Renewal recap",
+      "recapMemberSince": "Member since",
+      "recapRoadmapCompleted": "Roadmap steps completed",
+      "recapSkillsAddressed": "Skills addressed",
+      "recapCvRounds": "CV feedback rounds"
+    },
+    "notifications": {
+      "title": "Notification preferences",
+      "description": "Muted categories are never delivered.",
+      "loadError": "Couldn't load your notification preferences",
+      "muted": "Muted",
+      "enabled": "Enabled",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "updating": "Updating…"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "description": "Remembered across sessions, on any device.",
+      "themeLabel": "Theme"
+    },
+    "privacy": {
+      "title": "Privacy & data",
+      "description": "Everything used to personalize your experience — view it, or clear it.",
+      "loadError": "Couldn't load your data overview",
+      "profilePresent": "Profile data",
+      "present": "Present",
+      "notPresent": "Not set",
+      "goals": "Goals set",
+      "analyses": "Skill-gap analyses",
+      "roadmaps": "Roadmaps",
+      "cvRounds": "CV feedback rounds",
+      "notificationsCount": "Notifications",
+      "subscriptionTier": "Subscription tier",
+      "none": "None",
+      "policyLink": "Read the Privacy Policy",
+      "clearTitle": "Clear profile data",
+      "clearDescription": "Clears your background, education, experience, and skills. Does not remove analyses, roadmaps, or CV feedback already generated.",
+      "clearAction": "Clear profile data",
+      "clearing": "Clearing…",
+      "clearConfirmTitle": "Clear your profile data?",
+      "clearConfirmDescription": "This removes your background, education, experience, and skills. It cannot be undone.",
+      "clearError": "Couldn't clear your profile data",
+      "clearSuccess": "Your profile data has been cleared."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Authentication is handled by Clerk — your password and login methods are managed there, not stored by Orbit.",
+      "managedByClerk": "Your login is managed and secured by Clerk",
+      "signOut": "Sign out of this device"
+    },
+    "dangerZone": {
+      "title": "Danger zone",
+      "description": "Permanently deletes your account and every piece of data associated with it — profile, goals, skill-gap analyses, roadmaps, CV feedback, notifications, and subscription. This cannot be undone.",
+      "deleteAction": "Delete my account",
+      "confirmLabel": "Type {{email}} to confirm",
+      "confirmAction": "Permanently delete my account",
+      "deleting": "Deleting…",
+      "deleteError": "Couldn't delete your account"
+    }
   }
 }
