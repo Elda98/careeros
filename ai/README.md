@@ -14,8 +14,45 @@ careeros_ai/
   capabilities/     # explainability, confidence calibration, grounding (PRD §26, shared across agents)
   knowledge/
     contracts.py    # DTOs for what crosses Intelligence <-> Knowledge (SAS §11.2)
+  orchestration/    # CareerSupervisor: multi-agent coordination, HITL, persistent checkpointing
+    supervisor.py    # the coordinator graph itself
+    checkpointer.py  # wires up langgraph-checkpoint-postgres against the app's own database
+  tools.py           # real LangChain tools (SkillGapAnalysisAgent's tool-calling loop)
+  observability.py   # structured log_event() + in-process METRICS counters
   llm.py            # default_llm() — the one place the LLM provider/model is chosen
 ```
+
+## Tool calling and reasoning pattern
+
+`SkillGapAnalysisAgent` is this package's flagship for genuine tool calling and explicit reasoning (the other two agents stay on a simpler generate→finalize shape deliberately — see the root README's [Multi-agent overview](../README.md#multi-agent-overview) for why). Its internal graph implements a real **ReAct** loop:
+
+```
+assemble_context → [reason ⇄ execute_tools] (≤4 rounds) → generate → validate → [retry ⇄ reason] (≤2) → calibrate
+```
+
+- **Tools** (`tools.py`): `normalize_skill`, `assess_role_relevance`, `compute_gap_coverage` — real Python functions over small, explicit reference tables (a skill taxonomy, per-role core-skill lists), bound to the LLM via `llm.bind_tools(...)`. The model decides when to call one; the result is genuinely computed, not templated.
+- **Reason/Act loop**: the `reason` node sees the running transcript and either requests a tool call or signals readiness to answer; `execute_tools` actually runs the request and appends a real observation. A conditional edge (`_route_after_reason`) routes between them, bounded at `MAX_TOOL_ROUNDS = 4` so it's a real, terminating loop.
+- **Retry loop**: `validate` is a genuine content-consistency gate (not just Pydantic schema validation, which is already guaranteed) — an empty gap list whose summary doesn't actually say "no gaps" is treated as malformed and retried (`MAX_RETRIES = 2`) via a conditional edge back to `reason`, with the failure surfaced to the model. Exhausting retries doesn't crash the request — the result is accepted but forced to `ConfidenceLevel.LOW` with an honest reason, per this project's existing "never present higher confidence than the actual basis" rule (`capabilities/confidence.py`).
+
+Verified live against Groq: one real run made 11 tool calls in a single reasoning round before answering, and the resulting gaps matched the reference core-skill list for the stated role.
+
+## Multi-agent coordination (`orchestration/`)
+
+`CareerSupervisor` (`orchestration/supervisor.py`) is an explicit coordinator over `SkillGapAnalysisAgent` and `RoadmapAgent` — not the two agents calling each other, and not the simpler direct-call sequence the original `refresh_skill_gap_analysis` endpoint still uses unchanged. Its graph:
+
+```
+run_skill_gap_agent → run_roadmap_agent → await_roadmap_approval → [finalize | rejected]
+```
+
+- **Structured communication**: `SkillGapAnalysisAgent`'s typed `SkillGapAnalysisOutput` is placed directly into shared graph state and handed to `RoadmapAgent` as its typed `RoadmapInput.analysis` — never serialized through a raw string.
+- **Human-in-the-loop**: `await_roadmap_approval` calls `langgraph.types.interrupt(...)`, pausing the graph and surfacing the draft roadmap. A human decision resumes it via `Command(resume=...)` — approved routes to `finalize` (the caller then persists the roadmap for real), rejected routes to `rejected` (nothing is persisted).
+- **Persistence** (`orchestration/checkpointer.py`): the pause above is only meaningful if it survives a restart — `PostgresSaver` (from `langgraph-checkpoint-postgres`, declared as a dependency from this project's start but unused until now) checkpoints the graph's state to the app's own Postgres database. Verified directly: started a run, discarded the Python process's `CareerSupervisor` object entirely, built a brand-new one against the same database, and resumed the same `thread_id` — it produced the correct, previously-computed roadmap.
+
+The backend wires this up at `POST /ai-career-center/career-plan/{start,approve,reject}` (`backend/app/api/routers/ai_career_center.py`), lazily opening the checkpointer connection on first real use rather than at process startup — see that router file's comments for why.
+
+## Observability (`observability.py`)
+
+`log_event(event, **fields)` emits one structured (JSON-serializable) log line per call and increments an in-process counter for it; `METRICS.snapshot()` returns all counters plus process uptime, exposed at the backend's `GET /metrics`. Used throughout the ReAct loop (`agent.reason`, `agent.tool_call`, `agent.retry`) and the supervisor (`supervisor.dispatch`, `supervisor.interrupt`, `supervisor.resume`, `supervisor.finalize`) — every reasoning step, tool call, retry, and HITL transition is visible in logs and in `/metrics`, not just the final output. LangSmith tracing (`LANGCHAIN_TRACING_V2`/`LANGCHAIN_API_KEY`/`LANGCHAIN_PROJECT`, see the root `.env.example`) is separate and automatic — LangChain/LangGraph instrument themselves from those env vars with no code here required.
 
 ## LLM Provider
 

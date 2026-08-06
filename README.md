@@ -62,6 +62,7 @@ Every AI output is explainable on request (what it's grounded on), calibrated (c
 - **Progress** — career-readiness snapshot, the AI's own summary, a skill-improvement timeline across analysis versions, and a milestones timeline
 - **Accessibility & i18n** — full English/Arabic bilingual support with real RTL layout (not machine-translated filler), dark/light theme, and a WCAG-AA-verified color system
 - **Explainability everywhere** — every AI-generated output (analysis, roadmap, feedback) can be explained on request: what data it used and why it reached its conclusion
+- **Supervised career-plan flow** (`POST /ai-career-center/career-plan/*`) — an alternative to the direct Skill-Gap Analysis endpoint that runs both agents through an explicit coordinator, pauses for a human approve/reject decision before the roadmap becomes real, and survives a backend restart mid-approval (see [Multi-agent overview](#multi-agent-overview))
 
 ## AI architecture
 
@@ -74,26 +75,88 @@ The Intelligence Layer (`ai/careeros_ai`) is a separate top-level Python package
 | **Fail loud, never degrade silently** | An agent that can't produce a trustworthy result raises rather than returning a low-confidence, unflagged answer — the prior valid state is left untouched |
 | **Calibrated confidence** | Every AI output ships a confidence level *and* the reason for it, derived from real signals (e.g. profile completeness), never a hardcoded "high" |
 | **Grounded explainability** | Every output can be explained on request — what data it was grounded on — computed from the real inputs, not an afterthought summary |
+| **Persistent state** | The supervised career-plan flow's state (including a paused human-in-the-loop approval) is checkpointed to Postgres — a process restart never loses an in-flight run |
+| **Guarded inputs/outputs** | Free-text user input is screened for prompt-injection patterns before it reaches a prompt; agent output goes through a real content-validation gate with a bounded retry loop before being accepted |
 
 ## Multi-agent overview
 
-Three specialized agents, each implemented as a small **LangGraph** `StateGraph`, not a single monolithic prompt:
+Three specialized agents, plus an explicit coordinator over two of them:
 
 ```
-SkillGapAnalysisAgent   assemble_context → generate → calibrate
-RoadmapAgent             assemble_context → generate → calibrate
-CVFeedbackAgent          assemble_context → generate → calibrate
+SkillGapAnalysisAgent   assemble_context → [reason ⇄ execute_tools] → generate → validate → calibrate
+RoadmapAgent            generate → finalize
+CVFeedbackAgent         generate → finalize
+CareerSupervisor        run_skill_gap_agent → run_roadmap_agent → await_roadmap_approval → finalize | rejected
 ```
-
-Each node has one job — gather the real inputs, call Groq for the actual generation, then calibrate a confidence score against real signals — so the reasoning steps are inspectable and testable independently, not one opaque prompt-to-output hop.
 
 | Agent | Owns (writes) | Reads |
 |---|---|---|
 | `SkillGapAnalysisAgent` | `skill_gap_analysis` | profile, goal, its own previous version |
 | `RoadmapAgent` | `roadmap` (item *content* only, never status) | current skill-gap analysis, its own previous version |
 | `CVFeedbackAgent` | `cv_feedback_round` | goal, the submitted document — nothing else |
+| `CareerSupervisor` | *(coordinates only — never writes directly)* | dispatches to `SkillGapAnalysisAgent` and `RoadmapAgent`, gates on a human decision |
 
-The three agents are not orchestrated as one live conversation between them — each is invoked at a specific point in the product flow (goal set → analysis; analysis changes → roadmap regenerates automatically; document submitted → feedback), and each is independently unit-testable via a fake `.run(input) -> output` substitute, without needing a live Groq key.
+`RoadmapAgent` and `CVFeedbackAgent` stay on a deliberately simple generate→finalize shape — every agent doing everything (tools, retries, multi-step reasoning) would make none of them a clear example of anything. `SkillGapAnalysisAgent` is the flagship for tool calling and explicit reasoning (below); `CareerSupervisor` (`ai/careeros_ai/orchestration/supervisor.py`) is the flagship for multi-agent coordination and human-in-the-loop, and is what backs the `/ai-career-center/career-plan/*` endpoints — a coordinator-driven alternative to calling `SkillGapAnalysisAgent`/`RoadmapAgent` directly (the original `/skill-gap-analysis/refresh` endpoint, still present and unchanged, calls them directly with no supervisor and no approval gate — both flows are real, live options, not one replacing the other).
+
+### Tool calling
+
+`ai/careeros_ai/tools.py` defines three real, callable tools, bound to the LLM via LangChain's tool-calling interface (`llm.bind_tools(...)`) — the model decides when to call one and with what arguments; the computation itself is genuine Python execution against small, explicit, inspectable reference tables (a skill-name taxonomy, per-role core-skill lists, gap-coverage math), not a canned string returned regardless of input:
+
+| Tool | What it actually computes |
+|---|---|
+| `normalize_skill` | Canonical name + related skills for a given skill string, from a real taxonomy dict |
+| `assess_role_relevance` | Whether a skill is a core reference requirement for the stated target role |
+| `compute_gap_coverage` | What fraction of a role's core reference skills the identified gaps actually cover |
+
+Verified against a real Groq call: for one test profile/goal pair, the agent made 11 real tool calls in a single reasoning round before producing its final analysis, whose gaps matched the reference core-skill list for the stated role — grounding that's checkable, not asserted.
+
+### Reasoning pattern: ReAct
+
+`SkillGapAnalysisAgent` implements an explicit **ReAct** (Reason + Act) loop, not a single prompt-response call:
+
+1. **Reason** — the LLM sees the running transcript (original profile/goal + any tool results so far) and either requests a tool call or signals it's ready to answer.
+2. **Act** — if a tool was requested, it's actually executed and the real result is appended as an observation; control returns to Reason. Bounded at 4 rounds (`MAX_TOOL_ROUNDS`) so this is a real, terminating loop, not an accidental infinite one.
+3. Once reasoning concludes, a structured final answer is generated from the *entire* transcript — the tool-grounded reasoning genuinely informs the output, it isn't discarded.
+4. A **content-validation gate** checks the answer isn't empty/inconsistent (e.g. no gaps found but the summary doesn't say so); a real failure here loops back to Reason (up to `MAX_RETRIES = 2`) with the failure surfaced to the model, rather than crashing the whole request.
+
+### Human-in-the-loop
+
+`CareerSupervisor` pauses (`langgraph.types.interrupt`) after producing a roadmap draft and waits for an explicit approve/reject decision — the draft is never persisted as a real `Roadmap` row until approved. Because the pause is checkpointed to Postgres (below), approval can come from a *different process* than the one that started the run — verified by starting a run, discarding that Python process's supervisor object entirely, and resuming the same `thread_id` from a brand-new one, which produced the correct persisted roadmap.
+
+### Multi-agent coordination
+
+`CareerSupervisor` is an explicit coordinator, not two agents calling each other directly: it holds shared graph state, dispatches to `SkillGapAnalysisAgent` first, passes that agent's *typed output DTO* directly into `RoadmapAgent`'s typed input (structured hand-off, never a raw string), and conditionally routes to either a `finalize` or `rejected` terminal node based on the human decision.
+
+### Persistent checkpointing
+
+`ai/careeros_ai/orchestration/checkpointer.py` wires up `langgraph-checkpoint-postgres`'s `PostgresSaver` against the app's own database — a dependency that was declared from the start of this project (`ai/requirements.txt`) but not actually used in code until this phase. The checkpointer connects lazily, on first real request to a `/career-plan/*` endpoint, not at process startup — so every other route (and the entire hermetic test suite) pays no Postgres cost for a feature it doesn't use.
+
+### Agent workflow diagrams
+
+`SkillGapAnalysisAgent`'s ReAct loop:
+
+```mermaid
+flowchart LR
+    A[assemble_context] --> R[reason]
+    R -->|tool call requested\nand rounds < 4| T[execute_tools]
+    T --> R
+    R -->|no more tool calls,\nor round budget spent| G[generate]
+    G --> V{validate}
+    V -->|empty/inconsistent,\nretries < 2| Y[retry] --> R
+    V -->|valid, or retries\nexhausted| C[calibrate] --> E[END]
+```
+
+`CareerSupervisor`'s coordination + human-in-the-loop flow:
+
+```mermaid
+flowchart LR
+    S([start]) --> SG[run_skill_gap_agent]
+    SG -->|typed SkillGapAnalysisOutput| RM[run_roadmap_agent]
+    RM -->|typed RoadmapOutput draft| AW[await_roadmap_approval]
+    AW -.->|interrupt: persisted\nto Postgres checkpoint| H{{human decision}}
+    H -->|approved| F[finalize] --> E1([roadmap persisted])
+    H -->|rejected| RJ[rejected] --> E2([no roadmap written])
+```
 
 ## Tech stack
 
@@ -101,13 +164,14 @@ The three agents are not orchestrated as one live conversation between them — 
 |---|---|
 | Frontend | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui + Radix primitives |
 | Backend | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 (async) |
-| AI orchestration | LangGraph, LangChain, **Groq** (`langchain-groq`) |
-| Database | PostgreSQL (+ pgvector-ready image) |
+| AI orchestration | LangGraph (StateGraph, tool calling, persistent checkpointing), LangChain, **Groq** (`langchain-groq`) |
+| Database | PostgreSQL — application tables + LangGraph checkpoint tables in the same database |
 | Auth | Clerk |
 | File storage | Supabase Storage (declared, not yet wired to a real upload flow — see [Known limitations](#known-limitations)) |
-| Cache | Redis |
-| Containerization | Docker + Docker Compose (local dev) |
-| Observability | LangSmith tracing, OpenTelemetry |
+| Cache / rate limiting | Redis (`redis.asyncio`) — a real fixed-window rate limiter on the AI-generation endpoints |
+| Containerization | Docker + Docker Compose (local dev), Docker on Render (production) |
+| Security | Prompt-injection detection, input length/control-char validation, PII redaction in logs (`backend/app/core/security.py`) |
+| Observability | LangSmith tracing, structured JSON logging, in-process metrics (`GET /metrics`), OpenTelemetry |
 | Testing | Pytest (`ai/`, `backend/`), Playwright (`frontend/`) |
 
 ## System architecture
@@ -277,39 +341,61 @@ Project presentation: <https://orbit-slide-exact.lovable.app/>
 
 ## Deployment status
 
-| Component | Status |
-|---|---|
-| **Frontend** | Deployed on Vercel: <https://frontend-ten-navy-5njxz04vw1.vercel.app> — marketing pages, sign-in/sign-up, and the app shell load correctly. Currently running with a **development-mode Clerk instance** (not a production Clerk instance), and pointed at a backend that is not yet fully live (see below), so authenticated, data-dependent pages will not yet work end-to-end from the deployed frontend. |
-| **Backend** | **Deployment currently in progress, not complete.** A backend service and its own free-tier Postgres/Redis have been provisioned on Render, but database migrations have not yet been applied against a production database, so no data-dependent endpoint is confirmed working in production yet. **The backend runs correctly and is fully tested locally via Docker** (`make up`) — this is the reliable way to run and evaluate the full product today. |
-| **Database** | Not yet finalized — mid-transition to a free-tier external Postgres provider at the time of writing. Locally, the app runs against a standard Dockerized PostgreSQL image. |
-| **AI (Groq)** | Fully working, verified against a real Groq API key in local/Docker runs (`backend/scripts/verify_e2e.py`) — 18-step real end-to-end run against real Postgres and real Groq, not mocked. |
+| Component | URL | Status |
+|---|---|---|
+| **Frontend** | <https://frontend-ten-navy-5njxz04vw1.vercel.app> (Vercel) | Live. Marketing pages, sign-in/sign-up, and the app shell load correctly. Running with a **development-mode Clerk instance** (not a production Clerk instance) — real users can sign in through a real browser session, but the instance is not production-grade Clerk. |
+| **Backend** | <https://careeros-backend-17f9.onrender.com> (Render, free tier, Docker) | Live. `/health` and `/docs` (Swagger) both return 200; CORS confirmed working from the Vercel origin; all endpoints, including the new `/ai-career-center/career-plan/*` supervisor flow, are registered and reachable. |
+| **Swagger / OpenAPI** | <https://careeros-backend-17f9.onrender.com/docs> | Live, interactive. |
+| **Metrics** | <https://careeros-backend-17f9.onrender.com/metrics> | Live — real in-process counters (see [Observability](#ai-architecture)). |
+| **Database** | Neon Postgres (free tier) | Live. All Alembic migrations applied; all 12 application tables plus the LangGraph checkpoint tables (`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`) confirmed present. Render's own free-tier Postgres was tried first and abandoned after exhaustive diagnosis of an external-connectivity issue specific to its free-tier proxy (confirmed via four independent Postgres clients across two OSes, all failing identically) — Neon's external endpoint has no such issue. |
+| **Redis** | Render Key Value (free tier) | Live — reachable over Render's internal network from the backend; now actually used (the new rate limiter), not just declared. |
+| **AI (Groq)** | — | Fully working in production: the ReAct tool-calling loop, the CareerSupervisor's human-in-the-loop flow, and persistent checkpointing were all verified end-to-end against this exact production database before this section was written. |
 
-**In short: the product is complete and fully verified locally/via Docker. Cloud deployment is real but partial — do not assume the public frontend URL demonstrates the full working product yet.**
+**Deployment architecture:**
+
+```mermaid
+flowchart LR
+    U[Browser] -->|HTTPS| FE[Vercel\nNext.js frontend]
+    FE -->|HTTPS + Clerk JWT| BE[Render Docker\nFastAPI backend]
+    BE -->|internal network| RD[(Render Key Value\nRedis)]
+    BE -->|external TLS| PG[(Neon Postgres\napp tables + LangGraph checkpoints)]
+    BE -->|HTTPS| GROQ[Groq API]
+    FE -.->|session| CLERK[Clerk]
+    BE -.->|verify JWT via JWKS| CLERK
+```
+
+Every one of these is a **free tier** — no paid plan was used anywhere in this deployment.
+
+**Known, honest gap**: the Clerk instance backing both frontend and backend is a *development* instance, not a production one — setting up production Clerk requires a domain the project doesn't own, DNS control, and real OAuth provider credentials, none of which are available in this environment. Real users can still sign up and sign in through an actual browser session against the dev instance; it just isn't the production-grade configuration a real launch would use.
 
 ## Known limitations
 
 Tracked in detail, feature-by-feature, against the PRD in [`PHASE0-AUDIT.md`](PHASE0-AUDIT.md) (method: every row checked against actual code, not assumed). Headline items:
 
-- **Cloud deployment is incomplete** — see [Deployment status](#deployment-status) above.
+- **Clerk is a development instance, not production**, on both frontend and backend (see [Deployment status](#deployment-status)) — a real launch would need a domain, DNS control, and real OAuth credentials this environment doesn't have.
 - **File upload for CV/Profile Feedback isn't wired to real storage.** The feature accepts pasted/typed text (a real, complete pipeline — generation, explanation, deletion) rather than a file upload through Supabase Storage; the schema field for a storage path exists for when that's built.
 - **No automatic material-change detection.** Skill-Gap Analysis can be refreshed on request (a real, working button), but nothing yet auto-triggers a refresh when a qualifying profile edit happens.
 - **No roadmap version history or change-diffing.** Only the current roadmap is queryable; there's no "what changed between version N and N+1" view yet.
 - **No payment processor.** Subscription/renewal data is real, computed on demand — there's no actual billing-cycle integration (e.g. Stripe) behind it.
 - **Live Clerk account deletion is code-complete but not exercised end-to-end** in every environment — it correctly fails closed (a 502, not a silent no-op) whenever `CLERK_SECRET_KEY` is unset, rather than pretending to succeed.
+- **`RoadmapAgent` and `CVFeedbackAgent` don't have their own tool-calling/ReAct loop.** Deliberate scope choice — see [Multi-agent overview](#multi-agent-overview) — `SkillGapAnalysisAgent` and `CareerSupervisor` are the flagships for those patterns rather than spreading them thin across every agent.
+- **In-process metrics (`/metrics`) reset on restart** and aren't aggregated across multiple instances — real, but not a substitute for a real metrics backend under production concurrency; documented as such in `careeros_ai/observability.py`.
 
 ## Future work
 
-- Complete and verify the cloud backend deployment (production Postgres reachable from the chosen host, migrations applied, production Clerk instance).
+- Production Clerk instance (needs a real domain + DNS + OAuth credentials).
 - Real file upload for CV/Profile Feedback via Supabase Storage.
 - Automatic material-change detection to auto-trigger analysis refreshes.
 - Roadmap version history and cross-version change explanations ("what changed and why").
 - A real payment processor integration behind Settings' subscription/renewal views.
+- Extend the ReAct/tool-calling pattern to `RoadmapAgent` and `CVFeedbackAgent` if their outputs would genuinely benefit from grounded tool lookups, rather than by default.
+- A real metrics backend (Prometheus/Grafana or similar) once `/metrics`' in-process counters stop being enough.
 - Expansion beyond the AI Career Center module (Learning Hub, Jobs & Internships, Community, Portfolio) per the long-term product vision in the PRD — deliberately out of scope for this phase.
 
 ## Testing
 
 ```bash
-# Backend — 47 tests, hermetic (SQLite in-memory, fake AI agents, no live Postgres/Groq needed)
+# Backend — 63 tests, hermetic (SQLite in-memory, fake AI/supervisor/rate-limiter, no live Postgres/Redis/Groq needed)
 cd backend && pytest tests/
 
 # ai package — 5 tests, pure logic, no API key needed
@@ -319,7 +405,7 @@ cd ai && pytest tests/
 cd backend && python -m scripts.verify_e2e   # or: make verify-e2e
 ```
 
-52/52 hermetic tests passing as of the last full run; the end-to-end script additionally walks the complete real product flow (profile → goal → analysis → roadmap → CV feedback → notifications → settings) against a live database and live Groq calls, with results independently confirmed via direct `psql` queries.
+68/68 hermetic tests passing as of the last full run (runs in ~7s — every external call, including the new CareerSupervisor and rate limiter, is faked the same way the LLM agents always have been). The end-to-end script additionally walks the complete real product flow (profile → goal → analysis → roadmap → CV feedback → notifications → settings) against a live database and live Groq calls, with results independently confirmed via direct `psql` queries. The ReAct tool-calling loop and the CareerSupervisor's human-in-the-loop flow (including a resume from a different process than the one that started it) were additionally verified live against production Neon Postgres + Groq during this phase.
 
 ## Documentation
 
