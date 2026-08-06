@@ -375,5 +375,57 @@
     "metrics": {
       "title": "مقاييس الإنجاز"
     }
+  },
+  "profile": {
+    "loadError": "تعذّر تحميل ملفك الشخصي",
+    "summary": {
+      "title": "الملخص المهني",
+      "goalLabel": "الهدف المهني"
+    },
+    "completeness": {
+      "title": "اكتمال الملف الشخصي",
+      "readyTitle": "جاهز لتحليل الذكاء الاصطناعي",
+      "improvableTitle": "المزيد من التفاصيل سيحسّن نتائجك",
+      "blockedTitle": "أضف المعلومات المطلوبة لتفعيل التحليل",
+      "fieldsComplete": "اكتمل {{done}} من {{total}} حقول الملف الشخصي",
+      "required": "مطلوب للتحليل",
+      "improves": "يحسّن نتائجك",
+      "goalRequired": "حدد هدفًا لتفعيل التحليل"
+    },
+    "form": {
+      "title": "الخلفية المهنية",
+      "description": "محدّثة دائمًا، وهذا ما يقرأه كل وكيل ذكاء اصطناعي قبل تحليل مسارك المهني.",
+      "backgroundPlaceholder": "خلفيتك المهنية…",
+      "educationPlaceholder": "تعليمك…",
+      "experiencePlaceholder": "خبرتك العملية…",
+      "skillsPlaceholder": "مثال: Python",
+      "addSkill": "إضافة",
+      "removeSkill": "إزالة {{skill}}",
+      "save": "حفظ التغييرات",
+      "saving": "جارٍ الحفظ…",
+      "saveSuccess": "تم حفظ ملفك الشخصي.",
+      "saveError": "تعذّر حفظ ملفك الشخصي"
+    },
+    "goals": {
+      "title": "سجل الأهداف",
+      "newTitle": "تحديد هدف جديد",
+      "newDescription": "تحديد هدف نشط جديد يؤرشف هدفك الحالي — يُحتفظ به، ولا يُحذف.",
+      "targetRoleLabel": "الدور المستهدف",
+      "targetRolePlaceholder": "مثال: مهندس خلفية (Backend)",
+      "targetFieldLabel": "المجال المستهدف (اختياري)",
+      "targetFieldPlaceholder": "مثال: التقنية المالية",
+      "targetRoleRequired": "الدور المستهدف مطلوب.",
+      "setActive": "تحديده كهدف نشط",
+      "settingGoal": "جارٍ تحديد الهدف…",
+      "setError": "تعذّر تحديد هدفك الجديد",
+      "activeNow": "{{role}} هو الآن هدفك النشط.",
+      "loadError": "تعذّر تحميل سجل أهدافك",
+      "emptyTitle": "لا توجد أهداف بعد",
+      "emptyDescription": "حدد هدفك الأول أعلاه.",
+      "active": "نشط",
+      "reactivate": "إعادة التنشيط",
+      "reactivating": "جارٍ إعادة التنشيط…",
+      "reactivateError": "تعذّر إعادة تنشيط هذا الهدف"
+    }
   }
 }

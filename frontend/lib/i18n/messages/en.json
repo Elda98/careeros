@@ -375,5 +375,57 @@
     "metrics": {
       "title": "Completion metrics"
     }
+  },
+  "profile": {
+    "loadError": "Couldn't load your profile",
+    "summary": {
+      "title": "Career summary",
+      "goalLabel": "Career goal"
+    },
+    "completeness": {
+      "title": "Profile completeness",
+      "readyTitle": "Ready for AI analysis",
+      "improvableTitle": "A bit more detail will improve your results",
+      "blockedTitle": "Add required info to enable analysis",
+      "fieldsComplete": "{{done}} of {{total}} profile fields complete",
+      "required": "Required for analysis",
+      "improves": "Improves your results",
+      "goalRequired": "Set a goal to enable analysis"
+    },
+    "form": {
+      "title": "Career background",
+      "description": "Kept up to date, this is what every AI agent reads before analyzing your career.",
+      "backgroundPlaceholder": "Your professional background…",
+      "educationPlaceholder": "Your education…",
+      "experiencePlaceholder": "Your work experience…",
+      "skillsPlaceholder": "e.g. Python",
+      "addSkill": "Add",
+      "removeSkill": "Remove {{skill}}",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saveSuccess": "Profile saved.",
+      "saveError": "Couldn't save your profile"
+    },
+    "goals": {
+      "title": "Goal history",
+      "newTitle": "Set a new goal",
+      "newDescription": "Setting a new active goal archives your current one — it's retained, not deleted.",
+      "targetRoleLabel": "Target role",
+      "targetRolePlaceholder": "e.g. Backend Engineer",
+      "targetFieldLabel": "Target field (optional)",
+      "targetFieldPlaceholder": "e.g. Fintech",
+      "targetRoleRequired": "Target role is required.",
+      "setActive": "Set as active goal",
+      "settingGoal": "Setting goal…",
+      "setError": "Couldn't set your new goal",
+      "activeNow": "{{role}} is now your active goal.",
+      "loadError": "Couldn't load your goal history",
+      "emptyTitle": "No goals yet",
+      "emptyDescription": "Set your first goal above.",
+      "active": "Active",
+      "reactivate": "Reactivate",
+      "reactivating": "Reactivating…",
+      "reactivateError": "Couldn't reactivate this goal"
+    }
   }
 }
