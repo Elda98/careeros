@@ -34,8 +34,24 @@ export default async function DashboardPage() {
   // FR-ONBOARD-1: Dashboard is the post-auth landing point (sign-in/sign-up
   // both redirect here); it is the one place that decides whether a user
   // still needs onboarding, so that decision is never duplicated.
-  const onboardingStatus = await apiFetch<OnboardingStatusRead>("/profile/onboarding-status", { token });
-  if (!onboardingStatus.onboarding_completed) {
+  //
+  // Wrapped in try/catch for the same reason as DashboardContent's fetch
+  // below: an unreachable/erroring backend must not crash this Server
+  // Component with an unhandled exception (production evidence: Vercel
+  // digest 3227098399, ECONNREFUSED against an undeployed backend). On
+  // failure, skip this redirect decision and fall through to
+  // DashboardContent, whose own try/catch renders the same failure as a
+  // normal error state instead of a hard crash. redirect() itself stays
+  // outside the try block so its render-interrupt isn't swallowed as a
+  // caught exception.
+  let onboardingCompleted = true;
+  try {
+    const onboardingStatus = await apiFetch<OnboardingStatusRead>("/profile/onboarding-status", { token });
+    onboardingCompleted = onboardingStatus.onboarding_completed;
+  } catch {
+    // Backend unreachable or erroring — handled above.
+  }
+  if (!onboardingCompleted) {
     redirect("/onboarding");
   }
 
