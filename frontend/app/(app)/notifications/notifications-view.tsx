@@ -1,132 +1,21 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import {
-  AlertCircle,
-  Bell,
-  Check,
-  CheckCircle2,
-  Clock,
-  FileText,
-  Route as RouteIcon,
-  Sparkles,
-  Target,
-  TrendingUp,
-} from "lucide-react";
+import { AlertCircle, Check, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiFetch } from "@/lib/api";
+import { groupByRecency, labelForGroup } from "@/lib/datetime";
 import { useTranslations } from "@/lib/i18n/locale-provider";
-import type { Locale } from "@/lib/i18n/config";
+import { CATEGORY_BADGE_VARIANT, CATEGORY_HREF, CATEGORY_ICON, categoryKey } from "@/lib/notification-categories";
 import type { NotificationRead } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-// The backend's authoritative, complete list of category strings it will
-// ever actually write (backend/app/schemas/settings.py's
-// NOTIFICATION_CATEGORIES) is exactly these three — everything else below
-// (reminder/progress_update/goal_update/system_message) is a
-// forward-compatible visual slot, not a live category: nothing in this
-// codebase produces them today. See frontend/README.md's Notifications
-// section for why they're defined anyway.
-const CATEGORY_ICON: Record<string, typeof Bell> = {
-  analysis_complete: Sparkles,
-  roadmap_updated: RouteIcon,
-  cv_feedback_complete: FileText,
-  reminder: Clock,
-  progress_update: TrendingUp,
-  goal_update: Target,
-  system_message: Bell,
-};
-
-const CATEGORY_BADGE_VARIANT: Record<string, BadgeProps["variant"]> = {
-  analysis_complete: "primary",
-  roadmap_updated: "rose",
-  cv_feedback_complete: "success",
-  reminder: "warning",
-  progress_update: "success",
-  goal_update: "primary",
-  system_message: "outline",
-};
-
-// Every category that currently exists also implies exactly one place to
-// go look — this is the closest honest reading of "whether action is
-// required" the real data supports (every notification exists because
-// something is ready to view). Deliberately not extended to the
-// forward-compatible-only categories above; a href for a category that
-// never occurs would be untestable dead code.
-const CATEGORY_HREF: Record<string, string> = {
-  analysis_complete: "/skill-gap-analysis",
-  roadmap_updated: "/roadmap",
-  cv_feedback_complete: "/cv-feedback",
-};
-
-const KNOWN_CATEGORIES = new Set(Object.keys(CATEGORY_ICON));
-
-function categoryKey(category: string): string {
-  return KNOWN_CATEGORIES.has(category) ? category : "system_message";
-}
-
-function relativeLabel(date: Date, locale: Locale): string {
-  const diffSec = Math.round((date.getTime() - Date.now()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  const abs = Math.abs(diffSec);
-  if (abs < 60) return rtf.format(diffSec, "second");
-  const diffMin = Math.round(diffSec / 60);
-  if (Math.abs(diffMin) < 60) return rtf.format(diffMin, "minute");
-  const diffHour = Math.round(diffMin / 60);
-  if (Math.abs(diffHour) < 24) return rtf.format(diffHour, "hour");
-  return rtf.format(Math.round(diffHour / 24), "day");
-}
-
-function timeOfDay(date: Date, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(date);
-}
-
-function fullDate(date: Date, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" }).format(date);
-}
-
-function startOfDay(d: Date): Date {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-interface Group {
-  key: "today" | "yesterday" | "earlier";
-  labelKey: string;
-  items: NotificationRead[];
-}
-
-function groupByRecency(notifications: NotificationRead[]): Group[] {
-  const now = new Date();
-  const todayStart = startOfDay(now).getTime();
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
-
-  const today: NotificationRead[] = [];
-  const yesterday: NotificationRead[] = [];
-  const earlier: NotificationRead[] = [];
-
-  for (const n of notifications) {
-    const t = new Date(n.created_at).getTime();
-    if (t >= todayStart) today.push(n);
-    else if (t >= yesterdayStart) yesterday.push(n);
-    else earlier.push(n);
-  }
-
-  const groups: Group[] = [
-    { key: "today", labelKey: "notifications.today", items: today },
-    { key: "yesterday", labelKey: "notifications.yesterday", items: yesterday },
-    { key: "earlier", labelKey: "notifications.earlier", items: earlier },
-  ];
-  return groups.filter((g) => g.items.length > 0);
-}
 
 /**
  * Split from page.tsx for the same reason as the other three migrated
@@ -161,7 +50,7 @@ export function NotificationsView({
 
   const [markingId, setMarkingId] = useState<string | null>(null);
 
-  const groups = useMemo(() => groupByRecency(notifications), [notifications]);
+  const groups = useMemo(() => groupByRecency(notifications, (n) => n.created_at), [notifications]);
 
   async function markRead(id: string) {
     const previous = notifications;
@@ -224,7 +113,7 @@ export function NotificationsView({
               const Icon = CATEGORY_ICON[key];
               const href = CATEGORY_HREF[n.category];
               const date = new Date(n.created_at);
-              const timeLabel = group.key === "today" ? relativeLabel(date, locale) : group.key === "yesterday" ? timeOfDay(date, locale) : fullDate(date, locale);
+              const timeLabel = labelForGroup(group.key, date, locale);
 
               return (
                 <li key={n.id}>

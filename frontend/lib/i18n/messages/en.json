@@ -40,6 +40,7 @@
     "roadmap": "Roadmap",
     "cvFeedback": "CV Feedback",
     "notifications": "Notifications",
+    "progress": "Progress",
     "profileGoal": "Profile & Goal",
     "settings": "Settings",
     "openMenu": "Open menu",
@@ -342,6 +343,37 @@
       "confirmAction": "Permanently delete my account",
       "deleting": "Deleting…",
       "deleteError": "Couldn't delete your account"
+    }
+  },
+  "progress": {
+    "loadError": "Couldn't load your progress",
+    "emptyTitle": "Your journey starts here",
+    "emptyDescription": "Complete onboarding to start tracking your career readiness, skill improvement, and milestones.",
+    "readiness": {
+      "eyebrow": "Career readiness",
+      "openGaps": "{{count}} open gaps",
+      "roadmapCompletion": "Roadmap completion",
+      "viewAnalysis": "View full analysis",
+      "viewRoadmap": "View full roadmap"
+    },
+    "insight": {
+      "title": "Your latest AI insight",
+      "description": "Grounded in your current analysis — never generic."
+    },
+    "skillImprovement": {
+      "title": "Skill improvement over time",
+      "description": "Every skill-gap analysis you've generated, oldest to newest.",
+      "gapsCount": "{{count}} gaps",
+      "onlyOneVersion": "Your first analysis — refresh it after updating your profile or goal to start tracking change over time."
+    },
+    "milestones": {
+      "title": "Your journey",
+      "description": "Everything your AI agents have delivered, in order.",
+      "emptyTitle": "No milestones yet",
+      "emptyDescription": "Your first skill-gap analysis, roadmap, and CV feedback will appear here as they're ready."
+    },
+    "metrics": {
+      "title": "Completion metrics"
     }
   }
 }

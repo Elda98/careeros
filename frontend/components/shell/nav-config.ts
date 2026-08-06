@@ -4,6 +4,7 @@ import {
   Route,
   FileText,
   Bell,
+  TrendingUp,
   UserCircle,
   Settings,
   type LucideIcon,
@@ -27,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/roadmap", labelKey: "nav.roadmap", icon: Route },
   { href: "/cv-feedback", labelKey: "nav.cvFeedback", icon: FileText },
   { href: "/notifications", labelKey: "nav.notifications", icon: Bell },
+  { href: "/progress", labelKey: "nav.progress", icon: TrendingUp },
   { href: "/profile", labelKey: "nav.profileGoal", icon: UserCircle },
   { href: "/settings", labelKey: "nav.settings", icon: Settings },
 ];

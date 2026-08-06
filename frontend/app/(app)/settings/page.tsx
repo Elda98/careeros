@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiError, apiFetch } from "@/lib/api";
+import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
 import type {
   AccountRead,
   DataOverviewRead,
@@ -33,30 +33,6 @@ export default async function SettingsPage() {
       </Suspense>
     </div>
   );
-}
-
-export interface Fetched<T> {
-  data: T | null;
-  error: string | null;
-}
-
-/** Every section on this page loads independently — one section failing must never block the rest. */
-async function fetchSection<T>(path: string, token: string): Promise<Fetched<T>> {
-  try {
-    return { data: await apiFetch<T>(path, { token }), error: null };
-  } catch (e) {
-    return { data: null, error: e instanceof Error ? e.message : "Failed to load" };
-  }
-}
-
-/** Like fetchSection, but a 404 means "nothing set yet" (a real, valid state), not a load failure. */
-async function fetchOptionalSection<T>(path: string, token: string): Promise<Fetched<T>> {
-  try {
-    return { data: await apiFetch<T>(path, { token }), error: null };
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return { data: null, error: null };
-    return { data: null, error: e instanceof Error ? e.message : "Failed to load" };
-  }
 }
 
 async function SettingsContent({ token }: { token: string }) {

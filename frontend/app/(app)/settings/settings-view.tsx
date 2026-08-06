@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth, useClerk } from "@clerk/nextjs";
-import { AlertCircle, Check, LogOut, Moon, ShieldCheck, Sun, SunMoon, Trash2 } from "lucide-react";
+import { Check, LogOut, Moon, ShieldCheck, Sun, SunMoon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { SectionError } from "@/components/section-error";
+import { StatCard } from "@/components/stat-card";
 import { apiFetch, extractApiErrorMessage } from "@/lib/api";
 import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/locale-provider";
@@ -36,7 +38,7 @@ import type {
   SubscriptionRead,
 } from "@/lib/types";
 
-import type { Fetched } from "./page";
+import type { Fetched } from "@/lib/server-fetch";
 
 /**
  * Split from page.tsx for the same reason as every other migrated page:
@@ -242,21 +244,6 @@ export function SettingsView({
   );
 }
 
-function SectionError({ message, error }: { message: string; error: string }) {
-  const { t } = useTranslations();
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
-      <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
-      <div className="flex-1">
-        <p className="text-small font-medium text-foreground">{message}</p>
-        <p className="mt-1 text-caption text-muted-foreground">{error}</p>
-      </div>
-      <Button asChild variant="outline" size="sm">
-        <a href="/settings">{t("common.retry")}</a>
-      </Button>
-    </div>
-  );
-}
 
 function ProfileGoalCard({ profile, activeGoal }: { profile: Fetched<ProfileRead>; activeGoal: Fetched<GoalRead> }) {
   const { t } = useTranslations();
@@ -269,7 +256,7 @@ function ProfileGoalCard({ profile, activeGoal }: { profile: Fetched<ProfileRead
         <CardDescription>{t("settings.profile.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {profile.error && <SectionError message={t("settings.profile.loadError")} error={profile.error} />}
+        {profile.error && <SectionError message={t("settings.profile.loadError")} error={profile.error} retryHref="/settings" />}
         {p && (
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-3">
@@ -343,7 +330,7 @@ function AccountCard({ account }: { account: Fetched<AccountRead> }) {
         <CardDescription>{t("settings.account.description")}</CardDescription>
       </CardHeader>
       <CardContent>
-        {account.error && <SectionError message={t("settings.account.loadError")} error={account.error} />}
+        {account.error && <SectionError message={t("settings.account.loadError")} error={account.error} retryHref="/settings" />}
         {a && (
           <dl className="space-y-2 text-small">
             <div className="flex items-center justify-between gap-3">
@@ -394,7 +381,7 @@ function SubscriptionCard({
         <CardDescription>{t("settings.subscription.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {subError && <SectionError message={t("settings.subscription.loadError")} error={subError} />}
+        {subError && <SectionError message={t("settings.subscription.loadError")} error={subError} retryHref="/settings" />}
         {sub && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -434,16 +421,16 @@ function SubscriptionCard({
 
         <div>
           <h3 className="mb-2 text-small font-medium text-foreground">{t("settings.subscription.recapTitle")}</h3>
-          {recap.error && <SectionError message={t("settings.subscription.loadError")} error={recap.error} />}
+          {recap.error && <SectionError message={t("settings.subscription.loadError")} error={recap.error} retryHref="/settings" />}
           {r && (
             <div className="grid gap-3 sm:grid-cols-3">
-              <RecapStat
+              <StatCard
                 label={t("settings.subscription.recapRoadmapCompleted")}
                 value={`${r.roadmap_items_completed_count} / ${r.roadmap_items_total_count}`}
               />
-              <RecapStat label={t("settings.subscription.recapSkillsAddressed")} value={String(r.skills_addressed_count)} />
-              <RecapStat label={t("settings.subscription.recapCvRounds")} value={String(r.cv_feedback_rounds_count)} />
-              <RecapStat
+              <StatCard label={t("settings.subscription.recapSkillsAddressed")} value={String(r.skills_addressed_count)} />
+              <StatCard label={t("settings.subscription.recapCvRounds")} value={String(r.cv_feedback_rounds_count)} />
+              <StatCard
                 label={t("settings.subscription.recapMemberSince")}
                 value={new Intl.DateTimeFormat(locale, { year: "numeric", month: "short" }).format(new Date(r.member_since))}
               />
@@ -452,15 +439,6 @@ function SubscriptionCard({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function RecapStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border-subtle bg-surface p-3">
-      <p className="text-title text-foreground">{value}</p>
-      <p className="mt-0.5 text-caption text-muted-foreground">{label}</p>
-    </div>
   );
 }
 
@@ -484,7 +462,7 @@ function NotificationPrefsCard({
         <CardDescription>{t("settings.notifications.description")}</CardDescription>
       </CardHeader>
       <CardContent>
-        {error && <SectionError message={t("settings.notifications.loadError")} error={error} />}
+        {error && <SectionError message={t("settings.notifications.loadError")} error={error} retryHref="/settings" />}
         {prefs && (
           <ul className="divide-y divide-border-subtle">
             {prefs.available_categories.map((category) => {
@@ -605,7 +583,7 @@ function PrivacyCard({
         <CardDescription>{t("settings.privacy.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {error && <SectionError message={t("settings.privacy.loadError")} error={error} />}
+        {error && <SectionError message={t("settings.privacy.loadError")} error={error} retryHref="/settings" />}
         {overview && (
           <dl className="space-y-1.5 text-small">
             <DataRow label={t("settings.privacy.profilePresent")} value={overview.profile_present ? t("settings.privacy.present") : t("settings.privacy.notPresent")} />
