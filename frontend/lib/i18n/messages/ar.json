@@ -223,5 +223,29 @@
       "factual_structural": "واقعية وهيكلية",
       "judgment_call": "مسألة اجتهادية"
     }
+  },
+  "notifications": {
+    "today": "اليوم",
+    "yesterday": "الأمس",
+    "earlier": "سابقًا",
+    "loadError": "تعذّر تحميل إشعاراتك",
+    "emptyTitle": "أنت على اطلاع تام",
+    "emptyDescription": "ستظهر هنا أي تحديثات فور جاهزية تحليل فجوتك المهارية، أو خارطة طريقك، أو تقييم سيرتك الذاتية.",
+    "markRead": "تحديد كمقروء",
+    "unread": "غير مقروء",
+    "category": {
+      "analysis_complete": "رؤية ذكاء اصطناعي",
+      "roadmap_updated": "تحديث خارطة الطريق",
+      "cv_feedback_complete": "توصية",
+      "reminder": "تذكير",
+      "progress_update": "تحديث التقدم",
+      "goal_update": "تحديث الهدف",
+      "system_message": "رسالة نظام"
+    },
+    "viewAction": {
+      "analysis_complete": "عرض التحليل",
+      "roadmap_updated": "عرض خارطة الطريق",
+      "cv_feedback_complete": "عرض التقييم"
+    }
   }
 }

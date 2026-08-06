@@ -223,5 +223,29 @@
       "factual_structural": "Factual & structural",
       "judgment_call": "Judgment call"
     }
+  },
+  "notifications": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "earlier": "Earlier",
+    "loadError": "Couldn't load your notifications",
+    "emptyTitle": "You're all caught up",
+    "emptyDescription": "You'll see an update here the moment your skill-gap analysis, roadmap, or CV feedback is ready.",
+    "markRead": "Mark as read",
+    "unread": "Unread",
+    "category": {
+      "analysis_complete": "AI Insight",
+      "roadmap_updated": "Roadmap Update",
+      "cv_feedback_complete": "Recommendation",
+      "reminder": "Reminder",
+      "progress_update": "Progress Update",
+      "goal_update": "Goal Update",
+      "system_message": "System Message"
+    },
+    "viewAction": {
+      "analysis_complete": "View analysis",
+      "roadmap_updated": "View roadmap",
+      "cv_feedback_complete": "View feedback"
+    }
   }
 }
