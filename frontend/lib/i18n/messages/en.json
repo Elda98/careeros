@@ -1,0 +1,227 @@
+{
+  "meta": {
+    "title": "Orbit — AI-Powered Career Intelligence",
+    "description": "Orbit is your AI Career Operating System — a persistent model of your career, worked on by a coordinated set of AI agents that identify gaps, build your roadmap, and improve your materials."
+  },
+  "common": {
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "goToDashboard": "Go to Dashboard",
+    "signOut": "Sign out",
+    "accountMenu": "Account menu",
+    "theme": "Toggle theme",
+    "language": "Language",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "retry": "Retry",
+    "confidence": "confidence",
+    "confidenceHigh": "high",
+    "confidenceMedium": "medium",
+    "confidenceLow": "low",
+    "version": "Version {{n}}",
+    "completeOnboarding": "Complete onboarding",
+    "groundedIn": "Grounded in",
+    "why": "Why?",
+    "hideExplanation": "Hide explanation",
+    "explaining": "Explaining…",
+    "explainError": "Couldn't load an explanation right now.",
+    "viewDetails": "Details",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "nav": {
+    "features": "Features",
+    "howItWorks": "How it Works",
+    "about": "About",
+    "faq": "FAQ",
+    "dashboard": "Dashboard",
+    "skillGapAnalysis": "Skill-Gap Analysis",
+    "roadmap": "Roadmap",
+    "cvFeedback": "CV Feedback",
+    "notifications": "Notifications",
+    "profileGoal": "Profile & Goal",
+    "settings": "Settings",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "closeNavigation": "Close navigation"
+  },
+  "hero": {
+    "eyebrow": "AI-Powered Career Ecosystem",
+    "headlinePrefix": "Your career, run by",
+    "headlineHighlight": "AI that never stops working",
+    "subtitle": "Orbit is an AI Career Operating System — a persistent model of your career, analyzed, planned, and improved by a coordinated team of specialized AI agents.",
+    "seeHowItWorks": "See how it works",
+    "trustLine": "Skill-Gap Analysis · Roadmap Generation · CV Feedback — three specialized AI agents, one career graph"
+  },
+  "features": {
+    "eyebrow": "Features",
+    "title": "Everything your career needs, in one system",
+    "subtitle": "Not a collection of disconnected tools — one persistent model of your career, worked on continuously.",
+    "items": {
+      "skillGap": { "title": "Skill-Gap Analysis", "description": "Compares your real profile against your stated goal and names exactly what's missing — never a bare score." },
+      "roadmap": { "title": "Roadmap Generation", "description": "An ordered, specific plan to close your gap, generated the moment your analysis is ready." },
+      "cvFeedback": { "title": "CV & Profile Feedback", "description": "Submit your CV any time and get feedback tied directly to your target role, not generic advice." },
+      "dashboard": { "title": "One Clear Dashboard", "description": "A single snapshot of where you stand and the one next action that matters — never a data grid." },
+      "notifications": { "title": "Smart Notifications", "description": "Know the moment your analysis or roadmap updates — with control over what you're notified about." },
+      "explainable": { "title": "Explainable, Always", "description": "Every recommendation can be explained on request, grounded in your actual data — never a black box." }
+    }
+  },
+  "howItWorks": {
+    "eyebrow": "How it works",
+    "title": "From goal to gap, closed",
+    "subtitle": "One continuous loop — not four disconnected steps you have to manage yourself.",
+    "steps": {
+      "goal": { "title": "Tell Orbit your goal", "description": "Share your background and your target role. Takes minutes, not a full application form." },
+      "analysis": { "title": "Get your skill-gap analysis", "description": "The Skill-Gap Analysis Agent compares your real profile against your goal and names the gaps." },
+      "roadmap": { "title": "Follow your roadmap", "description": "The Roadmap Agent turns that analysis into an ordered plan of specific, actionable steps." },
+      "progress": { "title": "Refine and track progress", "description": "Get CV feedback whenever you want, mark roadmap items complete, and watch your gap close." }
+    }
+  },
+  "aiAgents": {
+    "eyebrow": "The agent ecosystem",
+    "title": "Three specialists. One shared understanding of you.",
+    "subtitle": "Each agent owns exactly one responsibility and never guesses at another's — every output is advisory, explainable on request, and always yours to override.",
+    "reads": "Reads",
+    "writes": "Writes",
+    "items": {
+      "skillGap": { "name": "Skill-Gap Analysis Agent", "role": "Compares your profile to your goal and identifies specific, named gaps.", "reads": "Profile, Goal", "writes": "Skill-Gap Analysis" },
+      "roadmap": { "name": "Roadmap Agent", "role": "Turns the current analysis into an ordered, actionable plan.", "reads": "Skill-Gap Analysis", "writes": "Roadmap" },
+      "cvFeedback": { "name": "CV / Profile Feedback Agent", "role": "Reviews your submitted CV against your target role — factual issues, separated from judgment calls.", "reads": "Goal, Submitted document", "writes": "Feedback" }
+    }
+  },
+  "careerJourney": {
+    "eyebrow": "The career journey",
+    "title": "Built for the transition that matters most",
+    "subtitle": "Final-year students and fresh graduates, going from \"I don't know where to start\" to walking into the right room prepared.",
+    "stages": {
+      "before": { "label": "Before Orbit", "title": "Generic advice, no clear plan", "description": "Scattered tips from a dozen sources, none of them aware of your actual background or the specific role you want." },
+      "dayOne": { "label": "Day one", "title": "A model of your career, built in minutes", "description": "Your profile and goal become your first skill-gap analysis and roadmap — immediately, not eventually." },
+      "weeksIn": { "label": "Weeks in", "title": "A plan you actually follow", "description": "Specific, ordered steps. CV feedback whenever you want it. Progress you can see, not guess at." },
+      "ready": { "label": "Ready", "title": "Applying with a CV built for the role", "description": "Every gap that mattered for your target role, addressed — not a generic resume sent everywhere." }
+    }
+  },
+  "productPreview": {
+    "eyebrow": "See it in action",
+    "title": "One screen, always current",
+    "subtitle": "Your dashboard reflects your actual graph state — the same one every agent reads from.",
+    "recommendedNext": "Recommended next",
+    "sampleAction": "Complete a backend project using PostgreSQL",
+    "sampleReason": "Addresses: SQL & database experience"
+  },
+  "testimonials": {
+    "eyebrow": "Early feedback",
+    "title": "Built for people, not personas",
+    "items": {
+      "amara": { "quote": "I finally knew exactly what was missing between my resume and the job postings I wanted. The roadmap turned that into a plan I actually followed.", "name": "Amara T.", "role": "Computer Science Graduate" },
+      "daniel": { "quote": "The CV feedback was specific — not \"add more keywords,\" but exactly which project to expand on for the role I was targeting.", "name": "Daniel R.", "role": "Final-Year Engineering Student" },
+      "priya": { "quote": "Having one place that actually remembered my goal and my progress made the whole job search feel less like starting over every week.", "name": "Priya S.", "role": "Recent Graduate, Data Science" }
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Questions, answered honestly",
+    "items": {
+      "what": { "question": "What exactly does Orbit do?", "answer": "It builds a persistent model of your career — your profile and goal — then uses three specialized AI agents to analyze your skill gaps, generate an ordered roadmap to close them, and give you feedback on your CV against your specific target role." },
+      "control": { "question": "Is the AI making decisions for me?", "answer": "No. Every output is advisory. You control every action a recommendation suggests — nothing executes on your behalf, and you can override or ignore any recommendation at any time." },
+      "explain": { "question": "Can I see why the AI recommended something?", "answer": "Yes, on request, for every output. Explanations are grounded in your actual profile and goal data — never a generic justification." },
+      "data": { "question": "What happens to my data?", "answer": "It's yours. You can view everything stored about you at any time, delete specific data independent of your account, or delete your account entirely — which removes everything." },
+      "pricing": { "question": "Do I need to pay to get started?", "answer": "There's a free tier to start. You can view and manage your subscription, or cancel, at any time." }
+    }
+  },
+  "cta": {
+    "title": "Stop guessing what's next. Start with a plan.",
+    "subtitle": "Set your goal, get your first skill-gap analysis, and see your roadmap — free to start.",
+    "button": "Get Started with Orbit"
+  },
+  "footer": {
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "productPreview": "Product Preview",
+    "aiAgents": "AI Agents",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "rights": "All rights reserved.",
+    "tagline": "Built for students and fresh graduates."
+  },
+  "dashboard": {
+    "recommendedNext": "Recommended next",
+    "viewRoadmap": "View full roadmap",
+    "allCaughtUp": "You're all caught up",
+    "allCaughtUpDescription": "Every roadmap item is complete or skipped. Check your skill-gap analysis for anything new, or review your full roadmap.",
+    "reviewRoadmap": "Review roadmap",
+    "loadError": "Couldn't load your dashboard",
+    "continueWhereYouLeftOff": "Continue where you left off",
+    "quickLinks": {
+      "skillGapDescription": "See what's between you and your goal",
+      "roadmapDescription": "Your ordered plan to close the gap",
+      "cvFeedbackDescription": "Get your CV reviewed against your goal"
+    }
+  },
+  "skillGapAnalysis": {
+    "eyebrow": "Your assessment",
+    "refresh": "Refresh analysis",
+    "refreshing": "Refreshing…",
+    "refreshSuccess": "Your analysis has been updated.",
+    "refreshError": "Couldn't refresh your analysis",
+    "loadError": "Couldn't load your analysis",
+    "emptyTitle": "No analysis yet",
+    "emptyDescription": "Complete onboarding to generate your first skill-gap analysis, or refresh once your profile is complete.",
+    "gapsTitle": "What's standing between you and your goal",
+    "severity": {
+      "high": "Critical gap",
+      "medium": "Moderate gap",
+      "low": "Minor gap"
+    }
+  },
+  "roadmap": {
+    "eyebrow": "Your roadmap",
+    "pathForward": "Your path forward",
+    "progress": "{{completed}} of {{total}} steps complete",
+    "complete": "Roadmap complete",
+    "upNext": "Up next",
+    "addresses": "Addresses",
+    "statusLabel": "Status",
+    "loadError": "Couldn't load your roadmap",
+    "statusUpdateError": "Couldn't update that step",
+    "statusUpdateSuccess": "Marked as complete.",
+    "emptyTitle": "No roadmap yet",
+    "emptyDescription": "Complete onboarding to generate your roadmap — it's created automatically from your first skill-gap analysis.",
+    "status": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "skipped": "Skipped"
+    }
+  },
+  "cvFeedback": {
+    "formTitle": "Submit for review",
+    "formDescription": "Paste your CV or profile text — it's evaluated against your current target role. Nothing is rewritten; you'll get feedback, not an edited copy.",
+    "textareaLabel": "CV / profile text",
+    "placeholder": "Paste your CV or profile content here…",
+    "wordCount": "{{count}} words",
+    "submitEmpty": "Paste or type your CV/profile text before submitting.",
+    "noActiveGoal": "Set an active goal before requesting feedback.",
+    "noActiveGoalAction": "Set your goal",
+    "submit": "Get AI feedback",
+    "submitting": "Generating feedback…",
+    "submitSuccess": "Your feedback is ready.",
+    "historyTitle": "Your feedback rounds",
+    "loadError": "Couldn't load your feedback history",
+    "emptyTitle": "No feedback yet",
+    "emptyDescription": "Submit your CV or profile above to get your first AI review, evaluated against your current goal.",
+    "round": "Round {{n}}",
+    "submittedText": "Submitted text",
+    "relevance": "Why this matters for your goal",
+    "delete": "Delete this round",
+    "deleting": "Deleting…",
+    "deleteConfirmTitle": "Delete round {{n}}?",
+    "deleteConfirmDescription": "This cannot be undone.",
+    "deleteError": "Couldn't delete this round",
+    "category": {
+      "factual_structural": "Factual & structural",
+      "judgment_call": "Judgment call"
+    }
+  }
+}
