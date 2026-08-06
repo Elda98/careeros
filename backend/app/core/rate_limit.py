@@ -27,6 +27,8 @@ from redis.asyncio import Redis
 
 from app.core.config import get_settings
 
+from careeros_ai.observability import log_event
+
 logger = logging.getLogger(__name__)
 
 # Deliberately generous — this guards against runaway/automated abuse of
@@ -56,6 +58,7 @@ async def enforce_rate_limit(user_id: str, *, bucket: str) -> None:
         logger.warning("Rate limiter Redis call failed — failing open for this request.", exc_info=True)
         return
     if count > MAX_REQUESTS_PER_WINDOW:
+        log_event("guardrail.rate_limit_exceeded", bucket=bucket, user_id=user_id, count=count)
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
             f"Rate limit exceeded for {bucket}: max {MAX_REQUESTS_PER_WINDOW} requests per {WINDOW_SECONDS}s.",

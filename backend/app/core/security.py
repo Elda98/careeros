@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import re
 
+from careeros_ai.observability import log_event
+
 _MAX_FREE_TEXT_LENGTH = 8000  # generous for a CV/background, well short of a token-limit or abuse-sized payload
 
 # Real, explicit patterns for the classic instruction-injection attempts —
@@ -55,6 +57,7 @@ def sanitize_free_text(text: str, *, field_name: str) -> str:
     cleaned = _CONTROL_CHARS.sub("", text)
     for pattern in _INJECTION_PATTERNS:
         if pattern.search(cleaned):
+            log_event("guardrail.prompt_injection_rejected", field=field_name, pattern=pattern.pattern)
             raise PromptInjectionDetected(
                 f"{field_name} contains a pattern that looks like an attempt to override system "
                 "instructions and was rejected."
