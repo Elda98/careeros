@@ -25,6 +25,8 @@ from app.api.deps import (
     get_roadmap_agent,
     get_skill_gap_analysis_agent,
 )
+from app.core.rate_limit import career_plan_start_limiter, cv_feedback_submit_limiter, skill_gap_refresh_limiter
+from app.core.security import PromptInjectionDetected, sanitize_free_text
 from app.db.models import (
     CVFeedbackItem,
     CVFeedbackRound,
@@ -185,6 +187,7 @@ async def refresh_skill_gap_analysis(
     db: AsyncSession = Depends(get_db),
     skill_gap_agent: SkillGapAnalysisAgent = Depends(get_skill_gap_analysis_agent),
     roadmap_agent: RoadmapAgent = Depends(get_roadmap_agent),
+    _rate_limit: None = Depends(skill_gap_refresh_limiter),
 ) -> SkillGapAnalysis:
     """Covers SAS Part IV §18.5 (First Skill-Gap Analysis) and the manual
     case of §19.3 (Analysis Refresh) — both use identical mechanics per
@@ -283,6 +286,7 @@ async def start_career_plan(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     supervisor: CareerSupervisor = Depends(get_career_supervisor),
+    _rate_limit: None = Depends(career_plan_start_limiter),
 ) -> CareerPlanStatusRead:
     goal = _active_goal(user)
     status_check = onboarding.evaluate(user.profile, goal)
@@ -478,6 +482,7 @@ async def submit_cv_feedback(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     agent: CVFeedbackAgent = Depends(get_cv_feedback_agent),
+    _rate_limit: None = Depends(cv_feedback_submit_limiter),
 ) -> CVFeedbackRound:
     """FR-AICC-13. Accepts submitted text directly for now — real file
     upload via Supabase Storage (`document_storage_path`) is a near-term
@@ -488,6 +493,12 @@ async def submit_cv_feedback(
     document_text = body.document_text.strip()
     if not document_text:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "document_text must not be empty")
+    try:
+        document_text = sanitize_free_text(document_text, field_name="document_text")
+    except PromptInjectionDetected as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
     goal = _active_goal(user)
     if goal is None:

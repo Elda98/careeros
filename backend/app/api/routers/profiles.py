@@ -13,11 +13,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.core.security import PromptInjectionDetected, sanitize_free_text
 from app.db.models import Goal, Profile, User
 from app.schemas.profile import GoalCreate, GoalRead, OnboardingStatusRead, ProfileRead, ProfileUpdate
 from app.services import onboarding
 
 router = APIRouter(prefix="/profile", tags=["profile"])
+
+_FREE_TEXT_FIELDS = ("background", "education", "experience")
 
 
 def _active_goal(user: User) -> Goal | None:
@@ -46,9 +49,25 @@ async def update_profile(
     """FR-PROF-1. Note: whether an edit is a *material* change (BR-GAP-3,
     triggering Skill-Gap Analysis regeneration) is decided by the AI Career
     Center module when it reads the updated Profile — this endpoint only
-    performs the write it owns."""
+    performs the write it owns.
+
+    Background/education/experience are guardrail-checked here (not only
+    at the AI Career Center layer that later reads them) because rejecting
+    a prompt-injection attempt at the point of write is a clearer, more
+    honest signal to the user than silently sanitizing it three steps
+    later when an analysis happens to run."""
+    updates = body.model_dump(exclude_unset=True)
+    for field in _FREE_TEXT_FIELDS:
+        if field in updates and updates[field]:
+            try:
+                updates[field] = sanitize_free_text(updates[field], field_name=field)
+            except PromptInjectionDetected as exc:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+            except ValueError as exc:
+                raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
     profile = user.profile or Profile(user_id=user.id)
-    for field, value in body.model_dump(exclude_unset=True).items():
+    for field, value in updates.items():
         setattr(profile, field, value)
     db.add(profile)
     await db.commit()

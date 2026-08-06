@@ -25,6 +25,7 @@ from app.api.deps import (
     get_roadmap_agent,
     get_skill_gap_analysis_agent,
 )
+from app.core.rate_limit import career_plan_start_limiter, cv_feedback_submit_limiter, skill_gap_refresh_limiter
 from app.db import models  # noqa: F401 — import registers every table on Base.metadata
 from app.db.base import Base
 from app.main import app
@@ -72,6 +73,13 @@ def client(session_maker: async_sessionmaker[AsyncSession]) -> Iterator[TestClie
     # real CareerSupervisor's checkpointer-backed state does across requests.
     fake_supervisor = FakeCareerSupervisor()
     app.dependency_overrides[get_career_supervisor] = lambda: fake_supervisor
+    # Real rate limiting hits Redis; the hermetic suite shouldn't depend on
+    # (or pay the latency of) a real external call for something orthogonal
+    # to what each test is actually verifying — same reasoning as every
+    # other fake above.
+    app.dependency_overrides[skill_gap_refresh_limiter] = lambda: None
+    app.dependency_overrides[career_plan_start_limiter] = lambda: None
+    app.dependency_overrides[cv_feedback_submit_limiter] = lambda: None
 
     with TestClient(app) as test_client:
         yield test_client
