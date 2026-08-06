@@ -1,6 +1,26 @@
-# Repository Governance
+# Contributing to CareerOS (Orbit)
 
-This file records the standing rules governing how the CareerOS repository is maintained. These rules were established during project planning and apply to every contributor — human or AI — from the point each rule was adopted onward. This file itself follows the rule it states: governance decisions are recorded in the repository, not left only in conversation.
+## Quick start
+
+1. Fork the repository and clone your fork.
+2. Copy `.env.example` to `.env` and fill in your own Clerk and Groq API keys — see the root [`README.md`](README.md#environment-variables) for what each variable does.
+3. Run the stack locally: `make up` (Docker Compose), or follow [`backend/README.md`](backend/README.md) and [`frontend/README.md`](frontend/README.md) for a native setup.
+4. Before opening a pull request:
+   - Backend: `cd backend && pytest tests/`
+   - AI package: `cd ai && pytest tests/`
+   - Frontend: `cd frontend && npx tsc --noEmit && npx eslint .`
+5. Keep commits scoped and describe *why* a change was made, not just what changed.
+6. Open a pull request against `master` with a clear description of the change and how it was verified.
+
+## Code style
+
+- Backend/AI: standard Python, type-hinted, matching the existing FastAPI/Pydantic patterns already in `backend/app/` and `ai/careeros_ai/`.
+- Frontend: TypeScript, functional React components, Tailwind utility classes via the existing design-token system (`frontend/app/globals.css`) — avoid hardcoded colors.
+- Every router/agent states which entity it owns vs. only reads (write-ownership discipline — see the root README's AI architecture section); new code should follow the same discipline.
+
+## Repository governance
+
+The rules below record how this repository's own project documentation (PRD, SAS, and related specs) is maintained. They apply to anyone editing `docs/`, not to routine application code changes covered by the Quick start above.
 
 ## 1. The repository is the single source of truth
 
