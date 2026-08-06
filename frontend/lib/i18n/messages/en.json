@@ -28,7 +28,11 @@
     "explainError": "Couldn't load an explanation right now.",
     "viewDetails": "Details",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "next": "Next",
+    "back": "Back",
+    "primaryNavigation": "Primary navigation",
+    "close": "Close"
   },
   "nav": {
     "features": "Features",
@@ -426,6 +430,45 @@
       "reactivate": "Reactivate",
       "reactivating": "Reactivating…",
       "reactivateError": "Couldn't reactivate this goal"
+    }
+  },
+  "onboarding": {
+    "welcome": "Let's build your career model",
+    "stepLabel": "Step {{current}} of {{total}}",
+    "steps": {
+      "profile": "About you",
+      "goal": "Your goal",
+      "skills": "Your skills",
+      "generate": "Your analysis"
+    },
+    "profile": {
+      "title": "Tell us about yourself",
+      "description": "This is the minimum Orbit needs before running your first skill-gap analysis — every AI agent reads it, nothing leaves Orbit.",
+      "backgroundPlaceholder": "e.g. Final-year Computer Science student",
+      "backgroundHint": "Required to generate your first analysis",
+      "error": "Couldn't save your profile"
+    },
+    "goal": {
+      "title": "What's your target role?",
+      "description": "You can change this at any time later.",
+      "roleRequired": "Target role is required.",
+      "error": "Couldn't save your goal"
+    },
+    "skills": {
+      "title": "What skills do you already have?",
+      "description": "Add a few — the more complete this is, the more confident your first analysis will be.",
+      "hint": "At least one skill is required to generate your first analysis",
+      "error": "Couldn't save your skills"
+    },
+    "generate": {
+      "title": "Ready to generate your first skill-gap analysis",
+      "description": "This runs the Skill-Gap Analysis Agent, then automatically builds your first roadmap.",
+      "button": "Generate my analysis",
+      "generating": "Generating…",
+      "error": "Couldn't generate your analysis",
+      "analysisTitle": "Your skill-gap analysis",
+      "roadmapTitle": "Your roadmap",
+      "roadmapSteps": "{{count}} steps generated"
     }
   }
 }

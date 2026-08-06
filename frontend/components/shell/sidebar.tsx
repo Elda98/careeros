@@ -51,7 +51,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           "transition-transform duration-300 ease-out lg:static lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full",
         )}
-        aria-label="Primary navigation"
+        aria-label={t("common.primaryNavigation")}
       >
         <div className="flex h-14 shrink-0 items-center justify-between px-4">
           <Link href="/dashboard" className="rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

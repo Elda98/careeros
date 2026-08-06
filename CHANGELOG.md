@@ -2,6 +2,45 @@
 
 Tracks implementation milestones across `frontend/`, `backend/`, and `ai/` together, since most features cut across all three. Architecture-level history (PRD, SAS) is tracked separately in `docs/01-Product/CHANGELOG.md` and `docs/02-Solution-Architecture/CHANGELOG.md`.
 
+## Phase 0 Closing Sprint — Onboarding migration, application-wide accessibility pass, production QA, deployment readiness — added
+
+Four-part closing sprint intended to finish Orbit v1.0: migrate the last remaining product page (Onboarding), perform one real accessibility pass across the whole application (fixing shared components, not writing a report), run a complete production QA pass, and verify the project is ready for a Vercel (frontend) + Docker/FastAPI (backend, unchanged architecture) deployment without actually deploying. No new product features; no backend architecture changes; no already-completed page redesigned except where an actual bug was found.
+
+### Part 1 — Onboarding migrated (eighth and final product page; Milestone 3 is now complete)
+
+Rebuilt as a standalone, hero-quality four-step wizard — deliberately kept outside the `(app)` shell (no Sidebar/Topbar), matching Sign-in/Sign-up, since there's nothing to navigate to yet at this point in the flow. A real numbered stepper (About you → Your goal → Your skills → Your analysis) reuses Roadmap's/Progress's dot-and-connector visual language rather than inventing a new widget; each transition moves focus to the new step's heading and announces it via the established `aria-live` pattern. `page.tsx` gained a real, previously-absent guard: an already-completed account visiting `/onboarding` now redirects to `/dashboard` server-side, written carefully so the completion check's own `try`/`catch` can never swallow `redirect()`'s internal throw. The final "Generate" step's reveal (AI summary, `ConfidenceBadge`, gap/roadmap lists) is deliberately concise — full detail is what Skill-Gap Analysis and Roadmap are for. Same four backend calls as before (`PATCH /profile` ×2, `POST /profile/goals`, `POST /ai-career-center/skill-gap-analysis/refresh`, `GET /ai-career-center/roadmap/current`), unchanged — presentation only.
+
+`components/removable-skill-chip.tsx` extracted from Profile (its first caller) since Onboarding needed the identical keyboard-accessible skill-removal control a second time — Profile updated to import it instead of keeping its own copy.
+
+### Part 2 — Application-wide accessibility pass (real fixes, not a report)
+
+A systematic grep sweep of the entire `app/`/`components/` tree, not a page-by-page manual review, looking for four categories of defect this project has fixed before on individual pages: hardcoded Tailwind colors bypassing the `Badge`/token system, physical-direction RTL classes, non-semantic clickable `<div>`/`<span>` elements, and missing/untranslated `aria-label`s. Result: **zero** remaining hardcoded colors, **zero** remaining physical RTL classes, **zero** remaining non-semantic clickable elements anywhere in the app — all three categories are now fully closed, not just spot-checked, confirming the discipline held across eight independent page migrations. Two real, previously-undiscovered defects were found and fixed, both in shared components with application-wide reach:
+
+- **`Sidebar` and `MarketingNav`'s navigation-landmark `aria-label`s were hardcoded English** (`"Primary navigation"`, `"Primary"`), never passed through `t()` — an Arabic-reading screen-reader user would have heard the English phrase regardless of the selected language, on every single page (Sidebar renders in the whole authenticated app; MarketingNav on every public page). Fixed once, in both components, via a new `common.primaryNavigation` key.
+- **`Dialog`'s close button had a hardcoded English `sr-only` "Close" label** — affects every `Dialog` in the app (CV Feedback's and Settings' confirmation modals). Fixed once, in the shared component, via a new `common.close` key, and simplified from an `sr-only` span to a direct `aria-label` on the close button.
+
+Also fixed while in the file: `components/ui/card.tsx`'s `CardTitle` was `React.forwardRef<HTMLParagraphElement, ...>` while actually rendering an `<h3>` — a real type inaccuracy TypeScript never caught (both interfaces are structurally empty extensions of `HTMLElement`, so it happened to be harmless in practice), corrected to `HTMLHeadingElement` while Onboarding became the first page in the app to actually pass a ref into `CardTitle` (for its step-heading focus management).
+
+### Part 3 — Final QA
+
+- **Broken-link check**: every internal `href`/`Link` target across `app/`, `components/`, and `lib/` (both JSX `href="..."` and object-literal `href: "..."` forms, including `nav-config.ts` and the dynamic `CATEGORY_HREF` map) cross-checked against real routes — zero broken links found.
+- **Production build actually run for the first time this whole redesign effort** (previous sessions verified `tsc`/`eslint` only, never `next build` itself) — completes cleanly, zero errors. Every one of the 14 routes renders dynamically (`ƒ`), because every page reads Clerk's `auth()` and/or the locale cookie, so Next.js correctly skips static prerendering everywhere — this also retires a previously-documented caveat that the build failed without a real Clerk key (there's no prerender step left for a placeholder key to fail during).
+- **Full route sweep**, both languages, all 14 routes (`/`, `/sign-in`, `/sign-up`, `/dashboard`, `/skill-gap-analysis`, `/roadmap`, `/cv-feedback`, `/notifications`, `/settings`, `/progress`, `/profile`, `/onboarding`, `/privacy`, `/terms`) — 200/307 everywhere, no 500s.
+- **Docker health**: all four containers (`frontend`, `backend`, `postgres`, `redis`) confirmed running and healthy; `GET /health` returns `200 {"status": "ok"}`.
+- **Backend + `ai` test suites re-run**: 47 backend + 5 `ai` tests, 52/52 passing, zero regressions from this sprint's one backend change (CORS config, below).
+- **`tsc --noEmit` and `eslint .`**: clean across the whole app, including the two shared components touched during the accessibility pass.
+
+### Part 4 — Production readiness
+
+- **Found and fixed a real production blocker**: `backend/app/main.py`'s `CORSMiddleware` had `allow_origins` hardcoded to `["http://localhost:3000"]` — a Vercel-deployed frontend is a different origin, so every request from it would have been rejected outright. Fixed by adding a `cors_allowed_origins` setting (`backend/app/core/config.py`, comma-separated, defaults to `http://localhost:3000` so local dev is unaffected) and a `cors_allowed_origins_list` property that `main.py` now reads instead of the hardcoded list. Configuration only — no endpoint, business rule, or architecture changed; re-verified with a live CORS preflight request against the default dev origin, and all 47 backend tests re-passing.
+- **`.env.example`** documents the new `CORS_ALLOWED_ORIGINS` variable, with a worked example for a real Vercel origin.
+- **Root `README.md` gained a new "Deployment" section**: a Vercel setup walkthrough for the frontend (Root Directory setting, required env vars, and the `API_URL`-vs-`NEXT_PUBLIC_API_URL` distinction explained for a non-Docker target), a backend-readiness note (health endpoint, the new CORS setting, and an explicit flag — not a fix — that `docker/backend.Dockerfile`'s `uvicorn --reload` is dev-only and a real deploy should override the container command rather than run the Dockerfile's default `CMD` unmodified), and a nine-item pre-deployment checklist. No actual deployment was performed, per instruction.
+- `frontend/README.md`'s stale "static-prerender fails without a real Clerk key" caveat was corrected to reflect the now-actually-verified `next build` result (see Part 3).
+
+### Honest summary
+
+Every product page is now on the frozen design system — the redesign effort this "Milestone 3" section has tracked since its first entry is complete. The accessibility pass found real, fixable defects in shared components and fixed them at the source, not per-page. The production build was actually run, not assumed. A real CORS blocker was found and fixed before it could surface in a live deployment. What remains open going into v1.0 (documented, not hidden): no `GET /roadmap/history` (blocks a full M8 Progress Roadmap-history section), no bulk notification mark-as-read, no live-verified Clerk account deletion (missing a real `CLERK_SECRET_KEY` in this environment), no Chromium in this environment for actual rendered-screenshot verification, and no color-contrast/axe-core automated audit. None of these are new to this sprint — all were already tracked; this sprint closed what it could without touching backend architecture or adding new features, and left the rest exactly as honestly documented as before.
+
 ## Milestone 3 — Complete Frontend UI/UX Redesign (in progress)
 
 ### Profile migrated to the frozen design system — added

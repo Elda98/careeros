@@ -1,13 +1,14 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { AlertCircle, CheckCircle2, Circle, Sparkles, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { RemovableSkillChip } from "@/components/removable-skill-chip";
 import { SectionError } from "@/components/section-error";
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -258,24 +259,13 @@ export function ProfileView({
                 {skills.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {skills.map((skill) => (
-                      // A real <button>, not a clickable <Badge> (a <div>) —
-                      // the old page's skill chips were keyboard-inoperable;
-                      // this keeps the identical Badge look via badgeVariants()
-                      // while getting native keyboard/focus semantics for free.
-                      <button
+                      <RemovableSkillChip
                         key={skill}
-                        type="button"
-                        onClick={() => removeSkill(skill)}
+                        skill={skill}
+                        onRemove={() => removeSkill(skill)}
                         disabled={savingProfile}
-                        className={cn(
-                          badgeVariants({ variant: "outline" }),
-                          "gap-1 transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        )}
-                        aria-label={t("profile.form.removeSkill", { skill })}
-                      >
-                        {skill}
-                        <X className="h-3 w-3" aria-hidden="true" />
-                      </button>
+                        removeLabel={t("profile.form.removeSkill", { skill })}
+                      />
                     ))}
                   </div>
                 )}

@@ -47,7 +47,7 @@ export function MarketingNav() {
           <Logo />
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-8 md:flex" aria-label={t("common.primaryNavigation")}>
           {LINK_KEYS.map((link) => (
             <a
               key={link.href}
@@ -96,7 +96,7 @@ export function MarketingNav() {
 
       {mobileOpen && (
         <div className="border-t border-border-subtle bg-background/95 backdrop-blur-lg md:hidden">
-          <nav className="container flex flex-col gap-1 py-4" aria-label="Primary">
+          <nav className="container flex flex-col gap-1 py-4" aria-label={t("common.primaryNavigation")}>
             {LINK_KEYS.map((link) => (
               <a
                 key={link.href}
