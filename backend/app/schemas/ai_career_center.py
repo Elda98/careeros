@@ -90,3 +90,31 @@ class ExplanationRead(BaseModel):
 
     explanation: str
     grounded_on: list[str]
+
+
+class RoadmapDraftItemRead(BaseModel):
+    """A roadmap item that exists only in the supervisor graph's persisted
+    checkpoint state, not yet written to the `roadmaps`/`roadmap_items`
+    tables — distinct from `RoadmapItemRead`, which always has a real row
+    (and therefore an `id`/`status`) behind it."""
+
+    title: str
+    description: str
+    addresses_gap: str
+
+
+class CareerPlanStatusRead(BaseModel):
+    """Response for both starting and resuming a supervised career-plan run
+    (`POST .../career-plan/start|approve|reject`). `status` is one of
+    "awaiting_approval" (a human decision is needed before the roadmap
+    becomes real), "approved" (the roadmap below is now a persisted,
+    real Roadmap), or "rejected" (no roadmap was persisted)."""
+
+    status: str
+    analysis: SkillGapAnalysisRead
+    roadmap_draft: list[RoadmapDraftItemRead] = []
+    roadmap: RoadmapRead | None = None
+
+
+class CareerPlanApprovalRequest(BaseModel):
+    feedback: str = ""

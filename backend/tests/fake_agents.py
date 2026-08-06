@@ -94,3 +94,40 @@ class FailingClerkAdminClient:
         from app.core.clerk_admin import ClerkAdminError
 
         raise ClerkAdminError("simulated Clerk API failure")
+
+
+class FakeCareerSupervisor:
+    """Satisfies the same interface as `careeros_ai.orchestration.supervisor
+    .CareerSupervisor` (`.start()`/`.resume()`) without a real LangGraph
+    graph, real LLM, or real checkpointer — tracks per-thread_id state in a
+    plain dict, enough to exercise `/career-plan/*`'s start-then-approve or
+    start-then-reject flows deterministically in tests."""
+
+    def __init__(self):
+        self._threads: dict[str, dict] = {}
+
+    def start(self, *, thread_id, profile, goal, previous_analysis, previous_roadmap) -> dict:
+        analysis = FakeSkillGapAnalysisAgent().run(
+            SkillGapAnalysisInput(profile=profile, goal=goal, previous_version=previous_analysis)
+        )
+        roadmap_draft = FakeRoadmapAgent().run(
+            RoadmapInput(analysis=analysis, previous_version=previous_roadmap)
+        )
+        self._threads[thread_id] = {"analysis": analysis, "roadmap_draft": roadmap_draft}
+        return {
+            "status": "awaiting_approval",
+            "interrupt": {
+                "type": "roadmap_approval",
+                "roadmap_items": [item.model_dump() for item in roadmap_draft.items],
+                "confidence": roadmap_draft.confidence,
+            },
+            "analysis": analysis,
+        }
+
+    def resume(self, *, thread_id, decision, feedback="") -> dict:
+        state = self._threads.pop(thread_id, None)
+        if state is None:
+            raise RuntimeError(f"no career-plan run awaiting approval for thread_id={thread_id!r}")
+        if decision == "approved":
+            return {"status": "approved", "analysis": state["analysis"], "roadmap": state["roadmap_draft"]}
+        return {"status": "rejected", "analysis": state["analysis"], "roadmap": None}

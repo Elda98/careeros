@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import (
+    get_career_supervisor,
     get_clerk_admin_client,
     get_current_user_id,
     get_cv_feedback_agent,
@@ -28,6 +29,7 @@ from app.db import models  # noqa: F401 — import registers every table on Base
 from app.db.base import Base
 from app.main import app
 from tests.fake_agents import (
+    FakeCareerSupervisor,
     FakeClerkAdminClient,
     FakeCVFeedbackAgent,
     FakeExplainabilityLLM,
@@ -64,6 +66,12 @@ def client(session_maker: async_sessionmaker[AsyncSession]) -> Iterator[TestClie
     app.dependency_overrides[get_cv_feedback_agent] = lambda: FakeCVFeedbackAgent()
     app.dependency_overrides[get_explainability_llm] = lambda: FakeExplainabilityLLM()
     app.dependency_overrides[get_clerk_admin_client] = lambda: FakeClerkAdminClient()
+    # One instance reused across every request in a test — its in-memory
+    # `_threads` state must survive between a /career-plan/start call and
+    # the /career-plan/approve|reject call that follows it, same as the
+    # real CareerSupervisor's checkpointer-backed state does across requests.
+    fake_supervisor = FakeCareerSupervisor()
+    app.dependency_overrides[get_career_supervisor] = lambda: fake_supervisor
 
     with TestClient(app) as test_client:
         yield test_client

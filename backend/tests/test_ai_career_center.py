@@ -178,3 +178,55 @@ def test_cannot_explain_another_users_roadmap_item(client: TestClient) -> None:
     finally:
         app.dependency_overrides[get_current_user_id] = lambda: TEST_CLERK_USER_ID
     assert response.status_code == 404
+
+
+# --- Supervised career-plan flow (CareerSupervisor + human-in-the-loop) ---
+
+
+def test_career_plan_start_persists_analysis_and_awaits_approval(client: TestClient) -> None:
+    """The Skill-Gap Analysis is real and persisted immediately; the
+    roadmap is not — it's only a draft until /approve is called."""
+    _complete_onboarding_bar(client)
+
+    response = client.post("/ai-career-center/career-plan/start")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "awaiting_approval"
+    assert body["analysis"]["version"] == 1
+    assert body["roadmap_draft"][0]["title"] == "Learn SQL basics"
+    assert body["roadmap"] is None
+
+    # The analysis is real (persisted); no roadmap exists yet anywhere.
+    assert client.get("/ai-career-center/skill-gap-analysis/current").status_code == 200
+    assert client.get("/ai-career-center/roadmap/current").status_code == 404
+
+
+def test_career_plan_approve_persists_the_roadmap(client: TestClient) -> None:
+    _complete_onboarding_bar(client)
+    client.post("/ai-career-center/career-plan/start")
+
+    response = client.post("/ai-career-center/career-plan/approve", json={})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "approved"
+    assert body["roadmap"]["items"][0]["title"] == "Learn SQL basics"
+
+    roadmap = client.get("/ai-career-center/roadmap/current").json()
+    assert roadmap["version"] == 1
+
+
+def test_career_plan_reject_persists_no_roadmap(client: TestClient) -> None:
+    _complete_onboarding_bar(client)
+    client.post("/ai-career-center/career-plan/start")
+
+    response = client.post("/ai-career-center/career-plan/reject", json={"feedback": "not specific enough"})
+    assert response.status_code == 200
+    assert response.json()["status"] == "rejected"
+    assert response.json()["roadmap"] is None
+
+    assert client.get("/ai-career-center/roadmap/current").status_code == 404
+
+
+def test_career_plan_approve_without_a_pending_run_returns_409(client: TestClient) -> None:
+    response = client.post("/ai-career-center/career-plan/approve", json={})
+    assert response.status_code == 409

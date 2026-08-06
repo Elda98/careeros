@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routers import ai_career_center, dashboard, health, notifications, profiles, settings
 from app.core.config import get_settings
+from app.core.logging_config import configure_logging
+
+configure_logging()
 
 app = FastAPI(
     title="CareerOS API",

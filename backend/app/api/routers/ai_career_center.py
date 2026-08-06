@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
+    get_career_supervisor,
     get_current_user,
     get_cv_feedback_agent,
     get_db,
@@ -36,9 +37,12 @@ from app.db.models import (
     User,
 )
 from app.schemas.ai_career_center import (
+    CareerPlanApprovalRequest,
+    CareerPlanStatusRead,
     CVFeedbackRoundRead,
     CVFeedbackSubmitRequest,
     ExplanationRead,
+    RoadmapDraftItemRead,
     RoadmapItemStatusUpdate,
     RoadmapRead,
     SkillGapAnalysisRead,
@@ -62,6 +66,7 @@ from careeros_ai.knowledge.contracts import (
     SkillGapAnalysisInput,
     SkillGapAnalysisOutput,
 )
+from careeros_ai.orchestration.supervisor import CareerSupervisor
 
 router = APIRouter(prefix="/ai-career-center", tags=["ai-career-center"])
 
@@ -122,22 +127,15 @@ def _to_roadmap_output_dto(roadmap: Roadmap) -> RoadmapOutput:
     )
 
 
-async def _generate_roadmap(
-    db: AsyncSession, user: User, analysis: SkillGapAnalysis, agent: RoadmapAgent
+async def _persist_roadmap_output(
+    db: AsyncSession, user: User, analysis: SkillGapAnalysis, output: RoadmapOutput, previous: Roadmap | None
 ) -> Roadmap:
-    previous = await _latest_roadmap(db, user.id)
-    try:
-        output = agent.run(
-            RoadmapInput(
-                analysis=_to_output_dto(analysis),
-                previous_version=_to_roadmap_output_dto(previous) if previous else None,
-            )
-        )
-    except GenerationFailed as exc:
-        # BR-AI-5 / SAS §4.18: no write occurs; whatever roadmap already
-        # exists remains the current one.
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
-
+    """The actual Knowledge Layer write for a Roadmap Agent output — shared
+    by both the direct-call flow (`_generate_roadmap`, agent invoked here)
+    and the supervised flow (`/career-plan/approve`, agent already invoked
+    inside the supervisor graph, `output` is its draft). Either way, the
+    write itself, and the notification it triggers, happen exactly once,
+    in exactly one place."""
     roadmap = Roadmap(
         user_id=user.id,
         analysis_id=analysis.id,
@@ -161,6 +159,24 @@ async def _generate_roadmap(
     await db.commit()
     await db.refresh(roadmap, attribute_names=["items"])
     return roadmap
+
+
+async def _generate_roadmap(
+    db: AsyncSession, user: User, analysis: SkillGapAnalysis, agent: RoadmapAgent
+) -> Roadmap:
+    previous = await _latest_roadmap(db, user.id)
+    try:
+        output = agent.run(
+            RoadmapInput(
+                analysis=_to_output_dto(analysis),
+                previous_version=_to_roadmap_output_dto(previous) if previous else None,
+            )
+        )
+    except GenerationFailed as exc:
+        # BR-AI-5 / SAS §4.18: no write occurs; whatever roadmap already
+        # exists remains the current one.
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    return await _persist_roadmap_output(db, user, analysis, output, previous)
 
 
 @router.post("/skill-gap-analysis/refresh", response_model=SkillGapAnalysisRead)
@@ -249,6 +265,152 @@ async def refresh_skill_gap_analysis(
     await _generate_roadmap(db, user, analysis, roadmap_agent)
 
     return analysis
+
+
+# --- Supervised career-plan flow (multi-agent coordination + HITL) --------
+# An explicit-coordinator alternative to the direct-call endpoints above:
+# the same two agents, run through CareerSupervisor (careeros_ai/orchestration)
+# instead of called directly, which stops for a human approval decision
+# before the roadmap draft is persisted. The Skill-Gap Analysis is still
+# persisted immediately either way — only the roadmap is gated, since
+# that's the artifact this flow exists to let a user review before it
+# becomes their active plan. Uses a per-user thread_id (`str(user.id)`),
+# so only one career-plan run may be in flight per user at a time.
+
+
+@router.post("/career-plan/start", response_model=CareerPlanStatusRead)
+async def start_career_plan(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    supervisor: CareerSupervisor = Depends(get_career_supervisor),
+) -> CareerPlanStatusRead:
+    goal = _active_goal(user)
+    status_check = onboarding.evaluate(user.profile, goal)
+    if not status_check.meets_hard_bar:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            {
+                "message": "Profile does not yet meet the minimum bar for analysis (BR-GAP-1)",
+                "missing_hard_bar_fields": status_check.missing_hard_bar_fields,
+                "goal_set": status_check.goal_set,
+            },
+        )
+    assert user.profile is not None and goal is not None  # guaranteed by meets_hard_bar
+
+    previous_analysis = await _latest_analysis(db, user.id)
+    previous_roadmap = await _latest_roadmap(db, user.id)
+
+    try:
+        result = supervisor.start(
+            thread_id=str(user.id),
+            profile=ProfileSnapshot(
+                user_id=user.id,
+                background=user.profile.background,
+                education=user.profile.education,
+                experience=user.profile.experience,
+                skills=user.profile.skills,
+            ),
+            goal=GoalSnapshot(user_id=user.id, target_role=goal.target_role, target_field=goal.target_field),
+            previous_analysis=_to_output_dto(previous_analysis) if previous_analysis else None,
+            previous_roadmap=_to_roadmap_output_dto(previous_roadmap) if previous_roadmap else None,
+        )
+    except GenerationFailed as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+
+    output: SkillGapAnalysisOutput = result["analysis"]
+    analysis = SkillGapAnalysis(
+        user_id=user.id,
+        version=(previous_analysis.version + 1 if previous_analysis else 1),
+        summary=output.summary,
+        confidence=output.confidence,
+        confidence_reason=output.confidence_reason,
+        grounded_on=output.grounded_on,
+    )
+    analysis.gaps = [
+        SkillGapItem(skill=g.skill, description=g.description, severity=g.severity) for g in output.gaps
+    ]
+    db.add(analysis)
+
+    if not user.profile.onboarding_completed:
+        user.profile.onboarding_completed = True
+        db.add(user.profile)
+
+    notify(
+        db,
+        user,
+        category="analysis_complete",
+        message=f"Your skill-gap analysis (version {analysis.version}) is ready.",
+    )
+    await db.commit()
+    await db.refresh(analysis, attribute_names=["gaps"])
+
+    draft_items = (
+        [RoadmapDraftItemRead(**item) for item in result["interrupt"]["roadmap_items"]]
+        if result["status"] == "awaiting_approval"
+        else []
+    )
+    return CareerPlanStatusRead(
+        status=result["status"],
+        analysis=SkillGapAnalysisRead.model_validate(analysis),
+        roadmap_draft=draft_items,
+        roadmap=None,
+    )
+
+
+@router.post("/career-plan/approve", response_model=CareerPlanStatusRead)
+async def approve_career_plan(
+    body: CareerPlanApprovalRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    supervisor: CareerSupervisor = Depends(get_career_supervisor),
+) -> CareerPlanStatusRead:
+    """Resumes the supervisor graph paused by `/career-plan/start` and
+    persists the roadmap draft it had produced — the human-in-the-loop
+    approval this whole flow exists for. Works even if the backend process
+    that ran `/start` has since restarted: the paused state lives in
+    Postgres via the checkpointer, not in this process's memory."""
+    try:
+        result = supervisor.resume(thread_id=str(user.id), decision="approved", feedback=body.feedback)
+    except Exception as exc:  # noqa: BLE001 — no run paused for this thread_id, or it already resolved
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No career plan is currently awaiting approval for this account."
+        ) from exc
+
+    if result["status"] != "approved" or result["roadmap"] is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No career plan is currently awaiting approval for this account."
+        )
+
+    analysis = await _latest_analysis(db, user.id)
+    previous_roadmap = await _latest_roadmap(db, user.id)
+    roadmap = await _persist_roadmap_output(db, user, analysis, result["roadmap"], previous_roadmap)
+
+    return CareerPlanStatusRead(
+        status="approved",
+        analysis=SkillGapAnalysisRead.model_validate(analysis),
+        roadmap=RoadmapRead.model_validate(roadmap),
+    )
+
+
+@router.post("/career-plan/reject", response_model=CareerPlanStatusRead)
+async def reject_career_plan(
+    body: CareerPlanApprovalRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    supervisor: CareerSupervisor = Depends(get_career_supervisor),
+) -> CareerPlanStatusRead:
+    """The other half of the human-in-the-loop gate: explicitly declines
+    the draft roadmap. Nothing is persisted — the analysis from `/start`
+    remains the user's current analysis, and no roadmap row is created."""
+    try:
+        supervisor.resume(thread_id=str(user.id), decision="rejected", feedback=body.feedback)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "No career plan is currently awaiting approval for this account."
+        ) from exc
+
+    analysis = await _latest_analysis(db, user.id)
+    return CareerPlanStatusRead(status="rejected", analysis=SkillGapAnalysisRead.model_validate(analysis), roadmap=None)
 
 
 @router.get("/skill-gap-analysis/current", response_model=SkillGapAnalysisRead)

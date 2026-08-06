@@ -1,6 +1,8 @@
+import logging
 from functools import lru_cache
+from threading import Lock
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -16,6 +18,10 @@ from careeros_ai.agents.cv_feedback import CVFeedbackAgent
 from careeros_ai.agents.roadmap import RoadmapAgent
 from careeros_ai.agents.skill_gap_analysis import SkillGapAnalysisAgent
 from careeros_ai.llm import default_llm
+from careeros_ai.orchestration.checkpointer import get_checkpointer
+from careeros_ai.orchestration.supervisor import CareerSupervisor
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "get_db",
@@ -26,6 +32,7 @@ __all__ = [
     "get_cv_feedback_agent",
     "get_explainability_llm",
     "get_clerk_admin_client",
+    "get_career_supervisor",
 ]
 
 _USER_LOAD_OPTIONS = (
@@ -109,6 +116,43 @@ def get_explainability_llm():
     it (SAS §5.11: Intelligence makes an output explainable; the explanation
     itself is generated fresh per request, not re-run through an agent)."""
     return _explainability_llm()
+
+
+_checkpointer_lock = Lock()
+_checkpointer_state: dict = {"cm": None, "value": None, "attempted": False}
+
+
+def _get_or_open_checkpointer():
+    """Lazily opens the supervisor graph's persistent Postgres checkpointer
+    on first actual use, not at app startup — deliberately, so that every
+    route *except* `/career-plan/*` (i.e. the entire hermetic test suite,
+    and most real traffic) never pays a Postgres round-trip it doesn't
+    need. Opened at most once per process and reused after that; still one
+    long-lived psycopg connection, just lazily established instead of
+    eagerly at startup."""
+    with _checkpointer_lock:
+        if _checkpointer_state["attempted"]:
+            return _checkpointer_state["value"]
+        _checkpointer_state["attempted"] = True
+        try:
+            cm = get_checkpointer(get_settings().database_url)
+            _checkpointer_state["value"] = cm.__enter__()
+            _checkpointer_state["cm"] = cm
+        except Exception:
+            logger.warning("Checkpointer unavailable — /career-plan endpoints will 503.", exc_info=True)
+            _checkpointer_state["value"] = None
+        return _checkpointer_state["value"]
+
+
+def get_career_supervisor() -> CareerSupervisor:
+    checkpointer = _get_or_open_checkpointer()
+    if checkpointer is None:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "The supervised career-plan flow is unavailable — its persistent checkpointer "
+            "could not connect to the database.",
+        )
+    return CareerSupervisor(_skill_gap_analysis_agent(), _roadmap_agent(), checkpointer)
 
 
 def get_clerk_admin_client(settings: Settings = Depends(get_settings)) -> ClerkAdminClient:
