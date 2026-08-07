@@ -2,13 +2,15 @@
 rubric: prompt injection protection, input validation, output validation,
 PII protection).
 
-Scope, deliberately: these guard the *free-text* fields a user controls
-that get interpolated directly into an agent's prompt — Profile
-background/education/experience and a submitted CV/document. They do not
-touch structured fields (goal target_role, skill names from the profile's
-skills list) — those are short, already length-bounded by the schema, and
-rejecting them on a false-positive match would break normal use for no
-real security benefit.
+Covers every user-controlled field that gets interpolated directly into
+an agent's prompt — Profile background/education/experience, a submitted
+CV/document, Goal target_role/target_field, and Profile's skills list
+(`sanitize_skill_list`, a `list[str]` with no length or count bound at
+the schema level, `app/schemas/profile.py`'s `ProfileUpdate.skills`).
+None of these fields have any length bound at the Pydantic schema
+level — `str`/`list[str]` with no `Field(max_length=...)` — so this
+module is the only thing standing between an arbitrarily large or
+injection-laden value and the agent prompt it reaches.
 """
 
 from __future__ import annotations
@@ -18,6 +20,8 @@ import re
 from careeros_ai.observability import log_event
 
 _MAX_FREE_TEXT_LENGTH = 8000  # generous for a CV/background, well short of a token-limit or abuse-sized payload
+_MAX_SKILL_LENGTH = 100  # generous for a real skill/technology name
+_MAX_SKILLS_COUNT = 50  # generous for a real profile; a list this long is already a resource-abuse signal
 
 # Real, explicit patterns for the classic instruction-injection attempts —
 # not a learned classifier (out of scope for a capstone with no labeled
@@ -63,6 +67,32 @@ def sanitize_free_text(text: str, *, field_name: str) -> str:
                 "instructions and was rejected."
             )
     return cleaned
+
+
+def sanitize_skill_list(skills: list[str], *, field_name: str = "skills") -> list[str]:
+    """Same guarantees as `sanitize_free_text`, applied per-entry to a
+    skills list — length-capped list, length-capped and control-char-
+    stripped entries, each entry screened for the same injection
+    patterns. A skill name is short, but nothing stops a caller from
+    submitting one 8000-character "skill" containing a full injection
+    attempt, or a few thousand entries, both of which end up directly in
+    `SkillGapAnalysisAgent`'s prompt (`inp.profile.skills`)."""
+    if len(skills) > _MAX_SKILLS_COUNT:
+        raise ValueError(f"{field_name} exceeds the maximum allowed count ({_MAX_SKILLS_COUNT}).")
+    cleaned_skills: list[str] = []
+    for skill in skills:
+        if len(skill) > _MAX_SKILL_LENGTH:
+            raise ValueError(f"A {field_name} entry exceeds the maximum allowed length ({_MAX_SKILL_LENGTH} characters).")
+        cleaned = _CONTROL_CHARS.sub("", skill)
+        for pattern in _INJECTION_PATTERNS:
+            if pattern.search(cleaned):
+                log_event("guardrail.prompt_injection_rejected", field=field_name, pattern=pattern.pattern)
+                raise PromptInjectionDetected(
+                    f"A {field_name} entry contains a pattern that looks like an attempt to override "
+                    "system instructions and was rejected."
+                )
+        cleaned_skills.append(cleaned)
+    return cleaned_skills
 
 
 def redact_pii_for_logging(text: str) -> str:

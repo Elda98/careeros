@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
-from app.core.security import PromptInjectionDetected, sanitize_free_text
+from app.core.security import PromptInjectionDetected, sanitize_free_text, sanitize_skill_list
 from app.db.models import Goal, Profile, User
 from app.schemas.profile import GoalCreate, GoalRead, OnboardingStatusRead, ProfileRead, ProfileUpdate
 from app.services import onboarding
@@ -65,6 +65,13 @@ async def update_profile(
                 raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
             except ValueError as exc:
                 raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+    if "skills" in updates and updates["skills"]:
+        try:
+            updates["skills"] = sanitize_skill_list(updates["skills"])
+        except PromptInjectionDetected as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
     profile = user.profile or Profile(user_id=user.id)
     for field, value in updates.items():
@@ -137,12 +144,23 @@ async def create_goal(
 ) -> Goal:
     """BR-GOAL-1: exactly one active goal at a time. BR-GOAL-2: setting a new
     active goal archives the current one — it is retained, not deleted."""
+    target_role = body.target_role
+    target_field = body.target_field
+    try:
+        target_role = sanitize_free_text(target_role, field_name="target_role")
+        if target_field:
+            target_field = sanitize_free_text(target_field, field_name="target_field")
+    except PromptInjectionDetected as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
     result = await db.execute(select(Goal).where(Goal.user_id == user.id, Goal.is_active.is_(True)))
     for existing in result.scalars().all():
         existing.is_active = False
         db.add(existing)
 
-    goal = Goal(user_id=user.id, target_role=body.target_role, target_field=body.target_field, is_active=True)
+    goal = Goal(user_id=user.id, target_role=target_role, target_field=target_field, is_active=True)
     db.add(goal)
     await db.commit()
     await db.refresh(goal)
