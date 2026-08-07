@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -113,9 +113,22 @@ class RoadmapOutput(BaseModel):
 
 
 class CVFeedbackItem(BaseModel):
-    """FR-AICC-15: distinguish factual/structural issues from judgment calls."""
+    """FR-AICC-15: distinguish factual/structural issues from judgment calls.
 
-    category: str  # "factual_structural" | "judgment_call"
+    `category` is a real Literal, not a loose `str` — the backend's DB
+    column (`CVFeedbackCategory`, a strict SQLAlchemy Enum,
+    `backend/app/db/models.py`) only accepts these two exact values.
+    Before this was a Literal, a hallucinated category string from the
+    LLM would pass straight through Pydantic (nothing constrained it),
+    the agent's own try/except (the failure happens later, at DB commit
+    — after the agent call has already returned successfully), and only
+    surface as an unhandled 500 at `db.commit()` time. As a Literal,
+    LangChain's structured-output parsing rejects an invalid value
+    immediately, which the existing `except Exception: raise
+    GenerationFailed(...)` in `agents/cv_feedback.py` already converts
+    into the same controlled 502 every other agent failure produces."""
+
+    category: Literal["factual_structural", "judgment_call"]
     note: str
     relevance_to_goal: str
 
