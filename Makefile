@@ -1,7 +1,7 @@
 ## CareerOS — common development commands.
 ## Run from the repository root.
 
-.PHONY: up down build logs migrate test-backend test-ai test-frontend lint-frontend verify-e2e
+.PHONY: up down build logs migrate test-backend test-ai test-frontend lint-frontend lint-backend verify-e2e
 
 up:
 	docker compose -f docker/docker-compose.yml up --build
@@ -29,6 +29,9 @@ test-frontend:
 
 lint-frontend:
 	cd frontend && npm run lint
+
+lint-backend:
+	cd backend && ruff check app/ ../ai/careeros_ai/
 
 verify-e2e:
 	docker compose -f docker/docker-compose.yml exec backend python -m scripts.verify_e2e
