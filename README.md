@@ -417,7 +417,11 @@ cd backend && python -m scripts.verify_e2e   # or: make verify-e2e
 
 ## SDAIA Academy attribution
 
-This project was built as a capstone project for the **SDAIA Academy**.
+This project was completed as the capstone for **SDAIA Academy**'s **Advanced Agentic AI Systems Engineering** training program — a 5-day advanced capstone, delivered on-site via Learning Space, 30 training hours.
+
+> Cohort/session dates: _not yet filled in — add the specific dates for the cohort this was completed under before final submission._
+
+See [SDAIA Academy on GitHub](https://github.com/SDAIAAcademy) and the official rubric this project was evaluated against: [`docs/SDAIA_CAPSTONE_RUBRIC.md`](docs/SDAIA_CAPSTONE_RUBRIC.md).
 
 ## License
 
