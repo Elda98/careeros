@@ -1,2 +1,25 @@
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 125
+src = ["app", "../ai/careeros_ai"]
+
+[tool.ruff.lint]
+# E/F: pyflakes/pycodestyle core checks. B: flake8-bugbear (real bug
+# patterns). BLE: blind `except Exception` — several call sites in this
+# codebase deliberately catch broadly (any LLM/generation failure must
+# become a controlled GenerationFailed/HTTPException, never propagate as
+# a raw 500) and already carry `# noqa: BLE001` explaining why; enabling
+# BLE001 is what makes those annotations meaningful instead of stale.
+# UP: pyupgrade (modern syntax). RUF: ruff's own additional checks
+# (mutable class defaults, stale noqa directives, etc).
+select = ["E", "F", "B", "BLE", "UP", "RUF"]
+ignore = [
+    # FastAPI's dependency-injection idiom is `param: T = Depends(fn)` —
+    # a function call as a default argument is required by the framework,
+    # not a mutable-default-argument bug. Ignoring per Ruff's own
+    # documented FastAPI guidance rather than restructuring ~80 correct,
+    # idiomatic route signatures to satisfy a rule that doesn't apply here.
+    "B008",
+]

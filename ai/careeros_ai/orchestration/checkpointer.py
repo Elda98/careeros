@@ -14,7 +14,7 @@ be resumed by thread_id from any process, at any time.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from typing import Iterator
+from collections.abc import Iterator
 
 from langgraph.checkpoint.postgres import PostgresSaver
 

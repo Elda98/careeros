@@ -10,7 +10,7 @@ not depending on each other.
 
 from __future__ import annotations
 
-from typing import Optional, TypedDict
+from typing import ClassVar, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
@@ -44,7 +44,7 @@ class _State(TypedDict):
     input: CVFeedbackInput
     llm_items: list[CVFeedbackItem]
     grounded_on: list[str]
-    output: Optional[CVFeedbackOutput]
+    output: CVFeedbackOutput | None
 
 
 def _generate(state: _State, llm: ChatGroq) -> _State:
@@ -60,7 +60,7 @@ def _generate(state: _State, llm: ChatGroq) -> _State:
         result: _ItemsResponse = structured_llm.invoke(
             [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=prompt)]
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise GenerationFailed(f"CV/Profile Feedback generation failed: {exc}") from exc
 
     state["llm_items"] = result.items
@@ -87,8 +87,8 @@ def build_graph(llm: ChatGroq):
 
 
 class CVFeedbackAgent(BaseAgent):
-    owns = "cv_feedback_round"
-    reads = ["goal", "submitted_document"]
+    owns: ClassVar[str] = "cv_feedback_round"
+    reads: ClassVar[list[str]] = ["goal", "submitted_document"]
 
     def __init__(self, llm: ChatGroq | None = None):
         self._llm = llm or default_llm()

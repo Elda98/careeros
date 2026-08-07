@@ -16,7 +16,7 @@ the same pattern thin across all three would not make any of them more real.
 
 from __future__ import annotations
 
-from typing import Annotated, Optional, TypedDict
+from typing import Annotated, ClassVar, TypedDict
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_groq import ChatGroq
@@ -76,7 +76,7 @@ class _State(TypedDict):
     llm_gaps: list[SkillGap]
     llm_summary: str
     grounded_on: list[str]
-    output: Optional[SkillGapAnalysisOutput]
+    output: SkillGapAnalysisOutput | None
 
 
 def _assemble_context(state: _State) -> _State:
@@ -122,7 +122,8 @@ def _execute_tools(state: _State) -> _State:
         else:
             try:
                 result = tool_fn.invoke(call["args"])
-            except Exception as exc:  # noqa: BLE001 — surfaced to the LLM as an observation, not a crash
+            except Exception as exc:  # noqa: BLE001 — deliberately broad: a tool failure becomes an
+                # observation the ReAct loop can react to, not a crash of the whole graph.
                 result = f"Tool '{call['name']}' failed: {exc}"
         log_event("agent.tool_call", agent="SkillGapAnalysisAgent", tool=call["name"], args=call["args"])
         tool_messages.append(ToolMessage(content=str(result), tool_call_id=call["id"]))
@@ -158,7 +159,9 @@ def _generate(state: _State, llm: ChatGroq) -> _State:
     )
     try:
         result: _GapsResponse = structured_llm.invoke([*state["messages"], closing_instruction])
-    except Exception as exc:  # noqa: BLE001 — a genuine generation failure, handled by the retry edge below
+    except Exception as exc:  # noqa: BLE001 — deliberately broad: converts to an empty result that
+        # the validate/retry loop below handles, rather than raising immediately and losing the
+        # chance for a subsequent attempt to succeed.
         log_event("agent.generate_error", agent="SkillGapAnalysisAgent", error=str(exc))
         return {**state, "llm_gaps": [], "llm_summary": "", "grounded_on": grounded_on}
 
@@ -244,8 +247,8 @@ def build_graph(llm: ChatGroq):
 
 
 class SkillGapAnalysisAgent(BaseAgent):
-    owns = "skill_gap_analysis"
-    reads = ["profile", "goal", "skill_gap_analysis.previous_version"]
+    owns: ClassVar[str] = "skill_gap_analysis"
+    reads: ClassVar[list[str]] = ["profile", "goal", "skill_gap_analysis.previous_version"]
 
     def __init__(self, llm: ChatGroq | None = None):
         self._llm = llm or default_llm()

@@ -75,10 +75,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    profile: Mapped["Profile | None"] = relationship(back_populates="user", uselist=False)
-    goals: Mapped[list["Goal"]] = relationship(back_populates="user")
-    subscription: Mapped["Subscription | None"] = relationship(back_populates="user", uselist=False)
-    notification_preference: Mapped["NotificationPreference | None"] = relationship(
+    profile: Mapped[Profile | None] = relationship(back_populates="user", uselist=False)
+    goals: Mapped[list[Goal]] = relationship(back_populates="user")
+    subscription: Mapped[Subscription | None] = relationship(back_populates="user", uselist=False)
+    notification_preference: Mapped[NotificationPreference | None] = relationship(
         back_populates="user", uselist=False
     )
 
@@ -101,7 +101,7 @@ class Subscription(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user: Mapped["User"] = relationship(back_populates="subscription")
+    user: Mapped[User] = relationship(back_populates="subscription")
 
 
 class NotificationRecord(Base):
@@ -134,7 +134,7 @@ class NotificationPreference(Base):
     muted_categories: Mapped[list[str]] = mapped_column(JSON, default=list)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    user: Mapped["User"] = relationship(back_populates="notification_preference")
+    user: Mapped[User] = relationship(back_populates="notification_preference")
 
 
 # --- Career Knowledge Graph: User Profiles module (FR-PROF) ----------------
@@ -160,7 +160,7 @@ class Profile(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    user: Mapped["User"] = relationship(back_populates="profile")
+    user: Mapped[User] = relationship(back_populates="profile")
 
 
 class Goal(Base):
@@ -178,7 +178,7 @@ class Goal(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    user: Mapped["User"] = relationship(back_populates="goals")
+    user: Mapped[User] = relationship(back_populates="goals")
 
 
 # --- Career Knowledge Graph: AI Career Center module (FR-AICC) -------------
@@ -197,7 +197,7 @@ class SkillGapAnalysis(Base):
     grounded_on: Mapped[list[str]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    gaps: Mapped[list["SkillGapItem"]] = relationship(back_populates="analysis", cascade="all, delete-orphan")
+    gaps: Mapped[list[SkillGapItem]] = relationship(back_populates="analysis", cascade="all, delete-orphan")
 
 
 class SkillGapItem(Base):
@@ -209,7 +209,7 @@ class SkillGapItem(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     severity: Mapped[ConfidenceLevel] = mapped_column(Enum(ConfidenceLevel), default=ConfidenceLevel.MEDIUM)
 
-    analysis: Mapped["SkillGapAnalysis"] = relationship(back_populates="gaps")
+    analysis: Mapped[SkillGapAnalysis] = relationship(back_populates="gaps")
 
 
 # Owned exclusively by the Roadmap Agent — item *content* only; item *status*
@@ -227,7 +227,7 @@ class Roadmap(Base):
     grounded_on: Mapped[list[str]] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    items: Mapped[list["RoadmapItem"]] = relationship(back_populates="roadmap", cascade="all, delete-orphan")
+    items: Mapped[list[RoadmapItem]] = relationship(back_populates="roadmap", cascade="all, delete-orphan")
 
 
 class RoadmapItem(Base):
@@ -242,8 +242,8 @@ class RoadmapItem(Base):
         Enum(RoadmapItemStatus), default=RoadmapItemStatus.NOT_STARTED
     )  # user-owned (BR-AI-2) — written only via the status-change endpoint, never by the Roadmap Agent
 
-    roadmap: Mapped["Roadmap"] = relationship(back_populates="items")
-    status_history: Mapped[list["RoadmapItemStatusChange"]] = relationship(
+    roadmap: Mapped[Roadmap] = relationship(back_populates="items")
+    status_history: Mapped[list[RoadmapItemStatusChange]] = relationship(
         back_populates="item", cascade="all, delete-orphan"
     )
 
@@ -259,7 +259,7 @@ class RoadmapItemStatusChange(Base):
     status: Mapped[RoadmapItemStatus] = mapped_column(Enum(RoadmapItemStatus), nullable=False)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    item: Mapped["RoadmapItem"] = relationship(back_populates="status_history")
+    item: Mapped[RoadmapItem] = relationship(back_populates="status_history")
 
 
 # Owned exclusively by the CV/Profile Feedback Agent — independent of
@@ -286,7 +286,7 @@ class CVFeedbackRound(Base):
     confidence: Mapped[ConfidenceLevel] = mapped_column(Enum(ConfidenceLevel), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    items: Mapped[list["CVFeedbackItem"]] = relationship(back_populates="round", cascade="all, delete-orphan")
+    items: Mapped[list[CVFeedbackItem]] = relationship(back_populates="round", cascade="all, delete-orphan")
 
 
 class CVFeedbackItem(Base):
@@ -298,4 +298,4 @@ class CVFeedbackItem(Base):
     note: Mapped[str] = mapped_column(Text, nullable=False)
     relevance_to_goal: Mapped[str] = mapped_column(Text, default="")
 
-    round: Mapped["CVFeedbackRound"] = relationship(back_populates="items")
+    round: Mapped[CVFeedbackRound] = relationship(back_populates="items")

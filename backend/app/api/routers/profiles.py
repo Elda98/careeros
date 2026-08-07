@@ -58,20 +58,20 @@ async def update_profile(
     later when an analysis happens to run."""
     updates = body.model_dump(exclude_unset=True)
     for field in _FREE_TEXT_FIELDS:
-        if field in updates and updates[field]:
+        if updates.get(field):
             try:
                 updates[field] = sanitize_free_text(updates[field], field_name=field)
             except PromptInjectionDetected as exc:
                 raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
             except ValueError as exc:
-                raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
-    if "skills" in updates and updates["skills"]:
+                raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    if updates.get("skills"):
         try:
             updates["skills"] = sanitize_skill_list(updates["skills"])
         except PromptInjectionDetected as exc:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
         except ValueError as exc:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
     profile = user.profile or Profile(user_id=user.id)
     for field, value in updates.items():
@@ -153,7 +153,7 @@ async def create_goal(
     except PromptInjectionDetected as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     except ValueError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
     result = await db.execute(select(Goal).where(Goal.user_id == user.id, Goal.is_active.is_(True)))
     for existing in result.scalars().all():

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -64,7 +64,7 @@ class SkillGap(BaseModel):
 class SkillGapAnalysisInput(BaseModel):
     profile: ProfileSnapshot
     goal: GoalSnapshot
-    previous_version: Optional["SkillGapAnalysisOutput"] = None
+    previous_version: SkillGapAnalysisOutput | None = None
 
 
 class SkillGapAnalysisOutput(BaseModel):
@@ -99,7 +99,7 @@ class RoadmapItemContent(BaseModel):
 
 class RoadmapInput(BaseModel):
     analysis: SkillGapAnalysisOutput
-    previous_version: Optional["RoadmapOutput"] = None
+    previous_version: RoadmapOutput | None = None
 
 
 class RoadmapOutput(BaseModel):

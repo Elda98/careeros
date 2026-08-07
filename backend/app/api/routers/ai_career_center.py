@@ -375,7 +375,7 @@ async def approve_career_plan(
     Postgres via the checkpointer, not in this process's memory."""
     try:
         result = supervisor.resume(thread_id=str(user.id), decision="approved", feedback=body.feedback)
-    except Exception as exc:  # noqa: BLE001 — no run paused for this thread_id, or it already resolved
+    except Exception as exc:  # no run paused for this thread_id, or it already resolved
         raise HTTPException(
             status.HTTP_409_CONFLICT, "No career plan is currently awaiting approval for this account."
         ) from exc
@@ -408,7 +408,7 @@ async def reject_career_plan(
     remains the user's current analysis, and no roadmap row is created."""
     try:
         supervisor.resume(thread_id=str(user.id), decision="rejected", feedback=body.feedback)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "No career plan is currently awaiting approval for this account."
         ) from exc
@@ -498,7 +498,7 @@ async def submit_cv_feedback(
     except PromptInjectionDetected as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     except ValueError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
     goal = _active_goal(user)
     if goal is None:
@@ -630,7 +630,7 @@ async def explain_skill_gap_item(
             grounded_context=grounded_context,
             question_scope=f"why the skill '{gap.skill}' was flagged as a gap",
         )
-    except Exception as exc:  # noqa: BLE001 — any LLM failure is an honest generation failure (BR-AI-5)
+    except Exception as exc:  # any LLM failure is an honest generation failure (BR-AI-5)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Explanation generation failed: {exc}") from exc
 
     return ExplanationRead(explanation=explanation, grounded_on=grounded_on)
@@ -670,7 +670,7 @@ async def explain_roadmap_item(
                 f"specifically how it addresses '{item.addresses_gap}'"
             ),
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # any LLM failure is an honest generation failure (BR-AI-5)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Explanation generation failed: {exc}") from exc
 
     return ExplanationRead(explanation=explanation, grounded_on=grounded_on)
@@ -711,7 +711,7 @@ async def explain_cv_feedback_item(
             grounded_context=grounded_context,
             question_scope=f"why this feedback matters for the target role: {item.note!r}",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # any LLM failure is an honest generation failure (BR-AI-5)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Explanation generation failed: {exc}") from exc
 
     return ExplanationRead(explanation=explanation, grounded_on=grounded_on)

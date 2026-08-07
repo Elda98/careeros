@@ -9,7 +9,7 @@ Roadmap version — explicitly never Profile or Goal directly (PRD §25.5).
 
 from __future__ import annotations
 
-from typing import Optional, TypedDict
+from typing import ClassVar, TypedDict
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
@@ -41,7 +41,7 @@ class _State(TypedDict):
     input: RoadmapInput
     llm_items: list[RoadmapItemContent]
     grounded_on: list[str]
-    output: Optional[RoadmapOutput]
+    output: RoadmapOutput | None
 
 
 def _generate(state: _State, llm: ChatGroq) -> _State:
@@ -57,7 +57,7 @@ def _generate(state: _State, llm: ChatGroq) -> _State:
         result: _ItemsResponse = structured_llm.invoke(
             [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=prompt)]
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise GenerationFailed(f"Roadmap generation failed: {exc}") from exc
 
     state["llm_items"] = result.items
@@ -89,8 +89,8 @@ def build_graph(llm: ChatGroq):
 
 
 class RoadmapAgent(BaseAgent):
-    owns = "roadmap"
-    reads = ["skill_gap_analysis.current", "roadmap.previous_version"]
+    owns: ClassVar[str] = "roadmap"
+    reads: ClassVar[list[str]] = ["skill_gap_analysis.current", "roadmap.previous_version"]
 
     def __init__(self, llm: ChatGroq | None = None):
         self._llm = llm or default_llm()

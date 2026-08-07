@@ -19,7 +19,7 @@ process, and it resumes exactly where it left off.
 
 from __future__ import annotations
 
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
 from langgraph.types import Command, interrupt
@@ -40,12 +40,12 @@ from careeros_ai.observability import log_event
 class SupervisorState(TypedDict):
     profile: ProfileSnapshot
     goal: GoalSnapshot
-    previous_analysis: Optional[SkillGapAnalysisOutput]
-    previous_roadmap: Optional[RoadmapOutput]
-    analysis_output: Optional[SkillGapAnalysisOutput]
-    roadmap_draft: Optional[RoadmapOutput]
-    approval_decision: Optional[str]
-    approval_feedback: Optional[str]
+    previous_analysis: SkillGapAnalysisOutput | None
+    previous_roadmap: RoadmapOutput | None
+    analysis_output: SkillGapAnalysisOutput | None
+    roadmap_draft: RoadmapOutput | None
+    approval_decision: str | None
+    approval_feedback: str | None
 
 
 def _run_skill_gap_agent(state: SupervisorState, agent: SkillGapAnalysisAgent) -> SupervisorState:
