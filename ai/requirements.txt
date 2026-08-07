@@ -1,5 +1,18 @@
 langgraph>=0.2,<0.3
-langgraph-checkpoint-postgres>=2.0
+# Pinned to the exact version actually tested (live, against Neon Postgres +
+# Groq) — langgraph-checkpoint-postgres>=3.0 emits a DeprecationWarning
+# ("incompatible versions of langgraph and checkpoint-postgres") on any
+# langgraph <0.5, since it added a version check assuming a newer langgraph
+# API. Every feature this project uses from it (PostgresSaver.from_conn_string,
+# .setup(), interrupt()/Command from langgraph.types) works correctly on this
+# exact pair — verified extensively, including automated tests that exercise
+# the real graphs (ai/tests/test_supervisor_graph.py) and a manual live
+# start/interrupt/resume-from-a-different-process run. Jumping langgraph to
+# >=0.5 to silence the warning is a real API-surface risk (LangGraph made
+# breaking changes across that boundary) for a cosmetic gain; pinning here
+# instead guarantees every install gets the exact combination already proven
+# to work, rather than silently drifting to an untested newer 3.x.
+langgraph-checkpoint-postgres==3.0.5
 langchain>=0.3,<0.4
 langchain-groq>=0.2
 langsmith>=0.1
