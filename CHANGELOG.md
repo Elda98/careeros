@@ -2,6 +2,43 @@
 
 Tracks implementation milestones across `frontend/`, `backend/`, and `ai/` together, since most features cut across all three. Architecture-level history (PRD, SAS) is tracked separately in `docs/01-Product/CHANGELOG.md` and `docs/02-Solution-Architecture/CHANGELOG.md`.
 
+## Phase 2 — GitHub submission readiness, production deployment, and SDAIA agentic-AI capstone requirements — added
+
+Three sub-phases: (1) making the repository submission-quality, (2) deploying the full stack on free-tier infrastructure only, (3) implementing eight specific advanced-agentic-AI capabilities and closing gaps found during a self-directed compliance audit.
+
+### GitHub submission readiness
+
+Root `README.md` rewritten from an internal-process document into a submission-quality overview (problem statement, solution, features, tech stack, folder structure, install/env/Docker instructions, deployment status, known limitations, future work, SDAIA attribution). Added `LICENSE` (MIT) and `CODE_OF_CONDUCT.md`, both previously missing; `CONTRIBUTING.md` gained a standard contributor quick-start section ahead of its existing repository-governance rules. Repository pushed to a new GitHub remote (`github.com/Elda98/careeros`) for the first time — no remote had existed before this phase.
+
+### Production deployment (free tier only)
+
+Frontend redeployed to Vercel with corrected `NEXT_PUBLIC_API_URL`. Backend deployed to Render (Docker, free plan) via a new root-level `Dockerfile` (a production copy of `docker/backend.Dockerfile`, since Render's Docker runtime requires a root-level file; `--reload` dropped as the one intentional difference). Database moved to Neon Postgres (free tier) after exhaustively diagnosing that Render's own free-tier external Postgres endpoint had a proxy-side issue rejecting real Postgres-protocol traffic after a successful TLS handshake — confirmed via four independent Postgres clients (asyncpg, psycopg3, pg8000, reference `psql`/libpq) across two OSes (Windows host, Linux Docker container), all failing identically; Neon's endpoint has no such issue. All three Alembic migrations applied against Neon; Redis stayed on Render's free Key Value offering, reachable over the internal network. A real, previously-undiscovered crash was found and fixed along the way: `frontend/app/(app)/dashboard/page.tsx`'s onboarding-status check had no try/catch (unlike the dashboard data fetch nine lines below it), so a backend-unreachable state crashed the whole page with an unhandled exception instead of degrading gracefully.
+
+### Agentic AI capabilities (SDAIA rubric)
+
+- **Real tool calling** — `ai/careeros_ai/tools.py`: three genuine LangChain tools (`normalize_skill`, `assess_role_relevance`, `compute_gap_coverage`) over small, explicit, inspectable reference tables — real computation, not canned responses.
+- **Explicit reasoning pattern (ReAct)** — `SkillGapAnalysisAgent`'s graph rebuilt as a real Reason+Act loop (`reason` ⇄ `execute_tools`, bounded at 4 rounds), verified live against Groq: one run made 11 real tool calls before answering.
+- **Graph improvements** — conditional edges (`_route_after_reason`, `_route_after_validate`), a genuine content-validation retry loop (bounded at 2 retries, falls back to an honestly-labeled LOW confidence rather than crashing), shared typed graph state.
+- **Multi-agent coordination** — new `ai/careeros_ai/orchestration/supervisor.py`: `CareerSupervisor`, an explicit coordinator over `SkillGapAnalysisAgent` and `RoadmapAgent` with typed DTO hand-off between them (never raw strings).
+- **Persistent checkpointing** — `ai/careeros_ai/orchestration/checkpointer.py` wires up `langgraph-checkpoint-postgres`'s `PostgresSaver` (a dependency declared since this project's start but unused in code until now) against the app's own database. Connects lazily on first real use, not at process startup, so the hermetic test suite and every unrelated route pay no Postgres cost.
+- **Human-in-the-loop** — `CareerSupervisor` pauses (`langgraph.types.interrupt`) after producing a roadmap draft; a human approve/reject decision resumes it (`Command(resume=...)`). Verified to survive a process boundary: started a run, discarded the Python process's supervisor object entirely, resumed the same `thread_id` from a brand-new one against the same database.
+- **Security & guardrails** — new `backend/app/core/security.py` (real regex-based prompt-injection detection and rejection, length/control-char validation, PII redaction for logs only) and `backend/app/core/rate_limit.py` (a real Redis-backed fixed-window limiter — `REDIS_URL` had been declared since project start but unused in code until now). Wired into `PATCH /profile` and `POST /cv-feedback` (guardrails) and the three AI-generation endpoints (rate limiting).
+- **Observability** — new `ai/careeros_ai/observability.py` (structured `log_event()` + in-process `METRICS` counters) and a new `GET /metrics` endpoint. LangSmith tracing confirmed automatic via existing env vars, no code required.
+
+Backend wiring: three new endpoints, `POST /ai-career-center/career-plan/{start,approve,reject}`, expose the supervised flow as a coordinator-driven alternative to the existing direct-call `/skill-gap-analysis/refresh` endpoint (unchanged, still present).
+
+### Self-directed compliance audit — gaps found and closed
+
+A rigorous re-read of the actual code (not a memory-based self-assessment) found that all new backend tests used fakes for the `CareerSupervisor` and rate limiter, so nothing in the automated suite had ever exercised the real LangGraph graphs, the real retry loop, or the real rate-limit threshold — those were only verified manually against live Groq/Postgres/Redis during development. Closed with three new test files, all against fakes/in-memory backends (hermetic, no live services required) rather than the fakes-of-fakes used elsewhere:
+
+- `ai/tests/test_supervisor_graph.py` — drives the real `CareerSupervisor` graph with an in-memory (`InMemorySaver`) checkpointer, proving the real interrupt/resume mechanics, thread isolation, and cross-instance resume.
+- `ai/tests/test_skill_gap_analysis_graph.py` — drives the real `SkillGapAnalysisAgent` graph with a scripted fake LLM, proving the ReAct routing, the retry loop (an invalid first answer is genuinely rejected and re-generated), the retry-exhaustion fallback to LOW confidence, and the tool-round budget actually terminating a model that never stops requesting tools.
+- `backend/tests/test_rate_limit.py` — drives `enforce_rate_limit` directly against a fake Redis client, proving the threshold, per-user/per-bucket scoping, and fail-open-on-Redis-outage behavior.
+
+Also added: a prompt-injection rejection test for the CV feedback endpoint (only Profile had one before, despite both being guarded identically), and pinned `langgraph-checkpoint-postgres` to the exact tested version (`==3.0.5`) for install reproducibility — deliberately not bumping `langgraph` itself past its tested `0.2.x` line to silence a cosmetic version-mismatch warning, since that crosses a real breaking-change boundary for an extensively-verified integration.
+
+Root README, `ai/README.md`, and `backend/README.md` updated throughout to match — architecture diagrams (system + deployment + two agent-workflow Mermaid diagrams), live URLs, honest deployment status, and updated test counts.
+
 ## Phase 0 Closing Sprint — Onboarding migration, application-wide accessibility pass, production QA, deployment readiness — added
 
 Four-part closing sprint intended to finish Orbit v1.0: migrate the last remaining product page (Onboarding), perform one real accessibility pass across the whole application (fixing shared components, not writing a report), run a complete production QA pass, and verify the project is ready for a Vercel (frontend) + Docker/FastAPI (backend, unchanged architecture) deployment without actually deploying. No new product features; no backend architecture changes; no already-completed page redesigned except where an actual bug was found.
