@@ -3,7 +3,7 @@
 Uses SQLite in-memory (via the portable GUID type, app/db/types.py) instead
 of a live Postgres — fast, no external service required. Every real
 Intelligence Layer agent dependency is overridden with a fake (see
-`fake_agents.py`) so tests never call a live LLM or require ANTHROPIC_API_KEY.
+`fake_agents.py`) so tests never call a live LLM or require GROQ_API_KEY.
 """
 
 from __future__ import annotations
