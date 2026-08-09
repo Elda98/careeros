@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import account, ai_career_center, dashboard, health, notifications, profiles, settings
+from app.api.routers import account, ai_career_center, dashboard, health, notifications, opportunities, profiles, settings
 from app.core.config import get_settings
 from app.core.logging_config import configure_logging
 
@@ -30,6 +30,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(account.router)
+app.include_router(opportunities.router)
 app.include_router(profiles.router)
 app.include_router(ai_career_center.router)
 app.include_router(dashboard.router)

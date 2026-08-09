@@ -42,6 +42,7 @@
     "dashboard": "Dashboard",
     "skillGapAnalysis": "Skill-Gap Analysis",
     "roadmap": "Roadmap",
+    "opportunities": "Opportunities",
     "cvFeedback": "CV Feedback",
     "notifications": "Notifications",
     "progress": "Progress",
@@ -526,13 +527,59 @@
   "companyDashboard": {
     "welcome": "Welcome, {{company}}",
     "subtitle": "Your company workspace on Orbit.",
-    "editProfile": "Edit company profile",
-    "comingSoon": "Job postings and candidate matching are the next milestone — your company profile is saved and ready."
+    "editProfile": "Edit company profile"
   },
   "providerDashboard": {
     "welcome": "Welcome, {{name}}",
     "subtitle": "Your service provider workspace on Orbit.",
     "editProfile": "Edit provider profile",
     "comingSoon": "Service listings and discovery are the next milestone — your provider profile is saved and ready."
+  },
+  "opportunities": {
+    "postNew": "Post an opportunity",
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "e.g. Backend Engineering Intern",
+      "typeLabel": "Type",
+      "typeJob": "Job",
+      "typeInternship": "Internship",
+      "locationLabel": "Location",
+      "locationPlaceholder": "e.g. Remote, Riyadh",
+      "skillsLabel": "Required skills",
+      "skillsPlaceholder": "e.g. Python",
+      "addSkill": "Add",
+      "removeSkill": "Remove {{skill}}",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "What will this person actually do?",
+      "submit": "Post opportunity",
+      "error": "Couldn't post this opportunity"
+    },
+    "yourPostings": "Your postings",
+    "noPostings": "You haven't posted any opportunities yet.",
+    "statusOpen": "Open",
+    "statusClosed": "Closed",
+    "close": "Close posting",
+    "reopen": "Reopen posting",
+    "viewApplications": "View applications ({{count}})",
+    "hideApplications": "Hide applications",
+    "noApplications": "No applications yet.",
+    "applicantStatus": {
+      "submitted": "Submitted",
+      "reviewed": "Reviewed",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "markReviewed": "Mark reviewed",
+    "accept": "Accept",
+    "reject": "Reject",
+    "browseTitle": "Opportunities",
+    "browseSubtitle": "Open roles from companies on Orbit, matched to what you're building toward.",
+    "noOpenOpportunities": "No open opportunities right now — check back soon.",
+    "apply": "Apply",
+    "applied": "Applied",
+    "alreadyApplied": "You've already applied",
+    "applyError": "Couldn't submit your application",
+    "myApplications": "Your applications",
+    "noApplicationsYet": "You haven't applied to anything yet."
   }
 }

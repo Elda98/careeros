@@ -83,6 +83,61 @@ export interface ServiceProviderProfileUpdate {
   contact_info?: string;
 }
 
+export type OpportunityType = "job" | "internship";
+export type OpportunityStatus = "open" | "closed";
+export type ApplicationStatus = "submitted" | "reviewed" | "accepted" | "rejected";
+
+export interface JobOpportunityCreate {
+  title: string;
+  description?: string;
+  opportunity_type?: OpportunityType;
+  location?: string;
+  required_skills?: string[];
+}
+
+export interface JobOpportunityUpdate {
+  title?: string;
+  description?: string;
+  opportunity_type?: OpportunityType;
+  location?: string;
+  required_skills?: string[];
+  status?: OpportunityStatus;
+}
+
+export interface JobOpportunityRead {
+  id: string;
+  title: string;
+  description: string;
+  opportunity_type: OpportunityType;
+  location: string;
+  required_skills: string[];
+  status: OpportunityStatus;
+  created_at: string;
+}
+
+export interface JobOpportunityWithCompanyRead extends JobOpportunityRead {
+  company_name: string;
+}
+
+export interface ApplicantRead {
+  user_id: string;
+  email: string;
+}
+
+export interface ApplicationRead {
+  id: string;
+  status: ApplicationStatus;
+  created_at: string;
+  applicant: ApplicantRead;
+}
+
+export interface MyApplicationRead {
+  id: string;
+  status: ApplicationStatus;
+  created_at: string;
+  opportunity: JobOpportunityWithCompanyRead;
+}
+
 export interface SkillGapItemRead {
   id: string;
   skill: string;

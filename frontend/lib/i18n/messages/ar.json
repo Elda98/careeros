@@ -42,6 +42,7 @@
     "dashboard": "لوحة التحكم",
     "skillGapAnalysis": "تحليل الفجوة المهارية",
     "roadmap": "خارطة الطريق",
+    "opportunities": "الفرص",
     "cvFeedback": "تقييم السيرة الذاتية",
     "notifications": "الإشعارات",
     "progress": "التقدم",
@@ -526,13 +527,59 @@
   "companyDashboard": {
     "welcome": "مرحبًا، {{company}}",
     "subtitle": "مساحة عمل شركتك في Orbit.",
-    "editProfile": "تعديل ملف الشركة",
-    "comingSoon": "نشر الوظائف ومطابقة المرشحين هما المرحلة القادمة — ملف شركتك محفوظ وجاهز."
+    "editProfile": "تعديل ملف الشركة"
   },
   "providerDashboard": {
     "welcome": "مرحبًا، {{name}}",
     "subtitle": "مساحة عمل مقدم الخدمة في Orbit.",
     "editProfile": "تعديل الملف الشخصي",
     "comingSoon": "قوائم الخدمات واكتشافها هما المرحلة القادمة — ملفك محفوظ وجاهز."
+  },
+  "opportunities": {
+    "postNew": "نشر فرصة",
+    "form": {
+      "titleLabel": "المسمى",
+      "titlePlaceholder": "مثال: متدرب هندسة الأنظمة الخلفية",
+      "typeLabel": "النوع",
+      "typeJob": "وظيفة",
+      "typeInternship": "تدريب",
+      "locationLabel": "الموقع",
+      "locationPlaceholder": "مثال: عن بعد، الرياض",
+      "skillsLabel": "المهارات المطلوبة",
+      "skillsPlaceholder": "مثال: بايثون",
+      "addSkill": "إضافة",
+      "removeSkill": "إزالة {{skill}}",
+      "descriptionLabel": "الوصف",
+      "descriptionPlaceholder": "ما الذي سيقوم به هذا الشخص فعليًا؟",
+      "submit": "نشر الفرصة",
+      "error": "تعذّر نشر هذه الفرصة"
+    },
+    "yourPostings": "فرصك المنشورة",
+    "noPostings": "لم تنشر أي فرص بعد.",
+    "statusOpen": "مفتوحة",
+    "statusClosed": "مغلقة",
+    "close": "إغلاق الفرصة",
+    "reopen": "إعادة فتح الفرصة",
+    "viewApplications": "عرض المتقدمين ({{count}})",
+    "hideApplications": "إخفاء المتقدمين",
+    "noApplications": "لا يوجد متقدمون بعد.",
+    "applicantStatus": {
+      "submitted": "تم التقديم",
+      "reviewed": "تمت المراجعة",
+      "accepted": "مقبول",
+      "rejected": "مرفوض"
+    },
+    "markReviewed": "تحديد كمُراجَع",
+    "accept": "قبول",
+    "reject": "رفض",
+    "browseTitle": "الفرص",
+    "browseSubtitle": "وظائف مفتوحة من شركات على Orbit، مطابقة لما تسعى إليه.",
+    "noOpenOpportunities": "لا توجد فرص مفتوحة حاليًا — تحقق مرة أخرى قريبًا.",
+    "apply": "تقديم",
+    "applied": "تم التقديم",
+    "alreadyApplied": "لقد تقدمت لهذه الفرصة بالفعل",
+    "applyError": "تعذّر إرسال طلبك",
+    "myApplications": "طلباتك",
+    "noApplicationsYet": "لم تتقدم لأي فرصة بعد."
   }
 }

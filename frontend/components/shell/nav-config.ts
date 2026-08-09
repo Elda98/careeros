@@ -7,6 +7,7 @@ import {
   TrendingUp,
   UserCircle,
   Settings,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { href: "/skill-gap-analysis", labelKey: "nav.skillGapAnalysis", icon: Target },
   { href: "/roadmap", labelKey: "nav.roadmap", icon: Route },
+  { href: "/opportunities", labelKey: "nav.opportunities", icon: Briefcase },
   { href: "/cv-feedback", labelKey: "nav.cvFeedback", icon: FileText },
   { href: "/notifications", labelKey: "nav.notifications", icon: Bell },
   { href: "/progress", labelKey: "nav.progress", icon: TrendingUp },

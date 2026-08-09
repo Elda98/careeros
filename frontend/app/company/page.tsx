@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
-import type { AccountTypeRead, CompanyProfileRead } from "@/lib/types";
+import type { AccountTypeRead, CompanyProfileRead, JobOpportunityRead } from "@/lib/types";
 
 import { CompanyDashboardView } from "./company-dashboard-view";
 
@@ -15,6 +15,7 @@ export default async function CompanyDashboardPage() {
 
   let redirectTarget: string | null = null;
   let profile: CompanyProfileRead | null = null;
+  let opportunities: JobOpportunityRead[] = [];
   try {
     const accountType = await apiFetch<AccountTypeRead>("/account/type", { token });
     if (accountType.account_type === null) {
@@ -25,6 +26,8 @@ export default async function CompanyDashboardPage() {
       profile = await apiFetch<CompanyProfileRead>("/account/company-profile", { token });
       if (!profile.company_name) {
         redirectTarget = "/company/onboarding";
+      } else {
+        opportunities = await apiFetch<JobOpportunityRead[]>("/company/opportunities", { token });
       }
     }
   } catch {
@@ -34,5 +37,5 @@ export default async function CompanyDashboardPage() {
     redirect(redirectTarget);
   }
 
-  return <CompanyDashboardView profile={profile} />;
+  return <CompanyDashboardView profile={profile} opportunities={opportunities} />;
 }

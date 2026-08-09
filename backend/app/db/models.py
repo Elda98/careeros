@@ -17,7 +17,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -151,6 +151,70 @@ class ServiceProviderProfile(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="service_provider_profile")
+
+
+class OpportunityType(str, enum.Enum):
+    JOB = "job"
+    INTERNSHIP = "internship"
+
+
+class OpportunityStatus(str, enum.Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+
+
+class ApplicationStatus(str, enum.Enum):
+    SUBMITTED = "submitted"
+    REVIEWED = "reviewed"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+
+class JobOpportunity(Base):
+    """Company MVP (PRD §16 Jobs & Internships, brought forward as part of
+    the role-based ecosystem evolution). Owned exclusively by the posting
+    CompanyProfile — never by a candidate, mirroring the Career Knowledge
+    Graph's own write-ownership discipline (SAS §25.8) applied to the
+    ecosystem personas."""
+
+    __tablename__ = "job_opportunities"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    company_profile_id: Mapped[uuid.UUID] = _uuid_fk("company_profiles.id", nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    opportunity_type: Mapped[OpportunityType] = mapped_column(Enum(OpportunityType), default=OpportunityType.JOB)
+    location: Mapped[str] = mapped_column(String, default="")
+    required_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    status: Mapped[OpportunityStatus] = mapped_column(Enum(OpportunityStatus), default=OpportunityStatus.OPEN)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    company_profile: Mapped[CompanyProfile] = relationship()
+    applications: Mapped[list[Application]] = relationship(back_populates="opportunity", cascade="all, delete-orphan")
+
+
+class Application(Base):
+    """A Student/Graduate's application to one JobOpportunity. Owned by
+    neither side exclusively in the write-ownership sense used elsewhere
+    (SAS §25.8 governs the Career Knowledge Graph specifically) — the
+    applicant creates it, the company updates only `status`, matching the
+    same "content vs. status" split already established for RoadmapItem
+    (SAS Part IV §21.3)."""
+
+    __tablename__ = "applications"
+    __table_args__ = (UniqueConstraint("opportunity_id", "user_id", name="uq_application_opportunity_user"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    opportunity_id: Mapped[uuid.UUID] = _uuid_fk("job_opportunities.id", nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = _uuid_fk("users.id", nullable=False, index=True)
+    status: Mapped[ApplicationStatus] = mapped_column(Enum(ApplicationStatus), default=ApplicationStatus.SUBMITTED)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    opportunity: Mapped[JobOpportunity] = relationship(back_populates="applications")
+    applicant: Mapped[User] = relationship()
 
 
 class Subscription(Base):
