@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, apiFetch } from "@/lib/api";
-import type { SkillGapAnalysisRead } from "@/lib/types";
+import type { ServiceListingWithProviderRead, SkillGapAnalysisRead } from "@/lib/types";
 
 import { SkillGapAnalysisView } from "./skill-gap-analysis-view";
 
@@ -42,7 +42,21 @@ async function AnalysisContent({ token }: { token: string }) {
     }
   }
 
-  return <SkillGapAnalysisView analysis={analysis} notFound={notFound} error={error} />;
+  // Best-effort: the "get support" ecosystem connection (Phase 7) is a
+  // nice-to-have addition to this page, not core to it — a failure here
+  // should never block rendering the actual analysis.
+  let recommendedServices: ServiceListingWithProviderRead[] = [];
+  if (analysis) {
+    try {
+      recommendedServices = await apiFetch<ServiceListingWithProviderRead[]>("/services/recommended", { token });
+    } catch {
+      recommendedServices = [];
+    }
+  }
+
+  return (
+    <SkillGapAnalysisView analysis={analysis} notFound={notFound} error={error} recommendedServices={recommendedServices} />
+  );
 }
 
 function AnalysisSkeleton() {

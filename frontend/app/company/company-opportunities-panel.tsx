@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { AlertCircle, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useState } from "react";
 
+import { ConfidenceBadge } from "@/components/confidence-badge";
 import { RemovableSkillChip } from "@/components/removable-skill-chip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -294,30 +295,51 @@ function OpportunityCard({
             {applications && applications.length === 0 && (
               <p className="text-small text-muted-foreground">{t("opportunities.noApplications")}</p>
             )}
-            {applications?.map((application) => (
-              <div
-                key={application.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle bg-background p-3"
-              >
-                <div>
-                  <p className="text-small font-medium text-foreground">{application.applicant.email}</p>
-                  <p className="text-caption text-muted-foreground">
-                    {t(`opportunities.applicantStatus.${application.status}`)}
-                  </p>
+            {applications?.map((application) => {
+              const readiness = application.applicant.readiness;
+              return (
+                <div
+                  key={application.id}
+                  className="flex flex-col gap-2.5 rounded-lg border border-border-subtle bg-background p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-small font-medium text-foreground">{application.applicant.email}</p>
+                      <p className="text-caption text-muted-foreground">
+                        {t(`opportunities.applicantStatus.${application.status}`)}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => updateApplicationStatus(application.id, "reviewed")}>
+                        {t("opportunities.markReviewed")}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => updateApplicationStatus(application.id, "accepted")}>
+                        {t("opportunities.accept")}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => updateApplicationStatus(application.id, "rejected")}>
+                        {t("opportunities.reject")}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {(readiness.target_role || readiness.confidence || readiness.skills.length > 0) && (
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2.5">
+                      {readiness.target_role && (
+                        <span className="text-caption text-foreground">
+                          {t("opportunities.candidateTargetRole", { role: readiness.target_role })}
+                        </span>
+                      )}
+                      {readiness.confidence && <ConfidenceBadge level={readiness.confidence} />}
+                      {readiness.skills.map((skill) => (
+                        <Badge key={skill} variant="outline">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm" onClick={() => updateApplicationStatus(application.id, "reviewed")}>
-                    {t("opportunities.markReviewed")}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => updateApplicationStatus(application.id, "accepted")}>
-                    {t("opportunities.accept")}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => updateApplicationStatus(application.id, "rejected")}>
-                    {t("opportunities.reject")}
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

@@ -62,6 +62,36 @@ def test_provider_cannot_access_another_providers_listing(client: TestClient) ->
         _reset()
 
 
+def test_recommended_services_matches_current_skill_gap(client: TestClient) -> None:
+    """Milestone 5 (ecosystem connection): Student/Graduate -> Skill Gap ->
+    Needed Support -> Service Providers. FakeSkillGapAnalysisAgent
+    (tests/fake_agents.py) always returns a gap on "SQL", so a listing about
+    SQL should be recommended and an unrelated one should not."""
+    _become_provider(client, title="Career Coach")
+    client.post("/provider/services", json={"title": "SQL Fundamentals Tutoring", "category": "Databases"})
+    client.post("/provider/services", json={"title": "Resume Review", "category": "Career Coaching"})
+
+    try:
+        _as(STUDENT_CLERK_ID)
+        client.put("/account/type", json={"account_type": "student"})
+
+        # No skill-gap analysis yet -> no recommendations (nothing to match against).
+        empty = client.get("/services/recommended")
+        assert empty.status_code == 200
+        assert empty.json() == []
+
+        client.patch("/profile", json={"background": "BSc CS", "skills": ["Python"]})
+        client.post("/profile/goals", json={"target_role": "Backend Engineer"})
+        client.post("/ai-career-center/skill-gap-analysis/refresh")
+
+        recommended = client.get("/services/recommended")
+        assert recommended.status_code == 200
+        titles = [s["title"] for s in recommended.json()]
+        assert titles == ["SQL Fundamentals Tutoring"]
+    finally:
+        _reset()
+
+
 def test_browse_shows_only_active_listings_with_provider_identity(client: TestClient) -> None:
     _become_provider(client, title="Career Coach")
     client.post("/provider/services", json={"title": "Resume Review", "category": "Career Coaching"})

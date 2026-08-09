@@ -10,7 +10,24 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.db.models import ApplicationStatus, OpportunityStatus, OpportunityType, ServiceListingStatus
+from app.db.models import ApplicationStatus, ConfidenceLevel, OpportunityStatus, OpportunityType, ServiceListingStatus
+
+
+class CandidateReadinessRead(BaseModel):
+    """Phase 7's "safe public-facing candidate readiness" representation —
+    the only view of a candidate's Career Knowledge Graph a Company is ever
+    allowed to see. Deliberately excludes the raw Profile text (background/
+    education/experience) and the Skill-Gap Analysis's private reasoning
+    (summary, confidence_reason, grounded_on, individual gaps): those stay
+    inside the candidate's own AI Career Center. Only what the candidate has
+    already chosen to declare (target role/field, skills) plus a single
+    top-line confidence signal, mirroring what the candidate's own Dashboard
+    shows them (see app/api/routers/dashboard.py's current_confidence)."""
+
+    target_role: str | None = None
+    target_field: str | None = None
+    confidence: ConfidenceLevel | None = None
+    skills: list[str] = []
 
 
 class JobOpportunityCreate(BaseModel):
@@ -63,14 +80,14 @@ class ApplicationStatusUpdate(BaseModel):
 
 
 class ApplicantRead(BaseModel):
-    """Deliberately minimal — PRD Phase 7's "safe public-facing candidate
-    readiness" representation is a richer view built in a later milestone
-    (see docs/... ecosystem connection). For now, a company sees exactly
-    what it needs to triage applications and nothing from the candidate's
-    private Career Knowledge Graph (no Profile, no Skill-Gap Analysis)."""
+    """A company's view of an applicant: identity (user_id, email) plus the
+    safe CandidateReadinessRead snapshot — never the candidate's raw Profile
+    or Skill-Gap Analysis reasoning directly (see CandidateReadinessRead's
+    own docstring)."""
 
     user_id: UUID
     email: str
+    readiness: CandidateReadinessRead
 
 
 class ApplicationRead(BaseModel):

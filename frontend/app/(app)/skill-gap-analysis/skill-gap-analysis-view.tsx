@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { apiFetch, extractApiErrorMessage } from "@/lib/api";
 import { useTranslations } from "@/lib/i18n/locale-provider";
-import type { ConfidenceLevel, SkillGapAnalysisRead } from "@/lib/types";
+import type { ConfidenceLevel, ServiceListingWithProviderRead, SkillGapAnalysisRead } from "@/lib/types";
 
 const SEVERITY_VARIANT: Record<ConfidenceLevel, "destructive" | "warning" | "success"> = {
   high: "destructive",
@@ -38,10 +38,12 @@ export function SkillGapAnalysisView({
   analysis,
   notFound,
   error,
+  recommendedServices,
 }: {
   analysis: SkillGapAnalysisRead | null;
   notFound: boolean;
   error: string | null;
+  recommendedServices: ServiceListingWithProviderRead[];
 }) {
   const { t } = useTranslations();
   const { getToken } = useAuth();
@@ -150,6 +152,31 @@ export function SkillGapAnalysisView({
           )}
         </CardContent>
       </Card>
+
+      {recommendedServices.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-heading text-foreground">{t("skillGapAnalysis.recommendedServicesTitle")}</h2>
+            <Link href="/services" className="text-small font-medium text-primary hover:underline">
+              {t("skillGapAnalysis.browseAllServices")}
+            </Link>
+          </div>
+          <p className="mt-1 text-small text-muted-foreground">{t("skillGapAnalysis.recommendedServicesSubtitle")}</p>
+          <div className="mt-3 space-y-3">
+            {recommendedServices.map((service) => (
+              <Card key={service.id}>
+                <CardHeader className="flex-row items-start justify-between space-y-0">
+                  <div>
+                    <p className="font-medium text-foreground">{service.title}</p>
+                    <p className="mt-1 text-small text-muted-foreground">{service.provider_title}</p>
+                  </div>
+                  {service.category && <Badge variant="outline">{service.category}</Badge>}
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

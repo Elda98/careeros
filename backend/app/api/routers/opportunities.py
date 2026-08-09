@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db, require_account_type
-from app.db.models import AccountType, Application, JobOpportunity, OpportunityStatus, User
+from app.db.models import AccountType, Application, Goal, JobOpportunity, OpportunityStatus, Profile, SkillGapAnalysis, User
 from app.schemas.ecosystem import (
     ApplicationRead,
     ApplicationStatusUpdate,
@@ -113,15 +113,46 @@ async def update_opportunity(
     return opportunity
 
 
-def _application_read(application: Application) -> dict:
+async def _candidate_readiness(db: AsyncSession, user_id: UUID) -> dict:
+    """Builds CandidateReadinessRead's dict by hand from the candidate's own
+    Career Knowledge Graph rows — never reusing the private Profile/Goal/
+    SkillGapAnalysis Read schemas here, so it's structurally impossible for
+    a field a company shouldn't see (background, education, experience,
+    confidence_reason, grounded_on, individual gaps) to leak through this
+    path."""
+    goal_result = await db.execute(
+        select(Goal).where(Goal.user_id == user_id, Goal.is_active.is_(True)).limit(1)
+    )
+    goal = goal_result.scalar_one_or_none()
+
+    profile_result = await db.execute(select(Profile).where(Profile.user_id == user_id))
+    profile = profile_result.scalar_one_or_none()
+
+    analysis_result = await db.execute(
+        select(SkillGapAnalysis)
+        .where(SkillGapAnalysis.user_id == user_id)
+        .order_by(SkillGapAnalysis.version.desc())
+        .limit(1)
+    )
+    analysis = analysis_result.scalar_one_or_none()
+
+    return {
+        "target_role": goal.target_role if goal else None,
+        "target_field": goal.target_field if goal else None,
+        "confidence": analysis.confidence if analysis else None,
+        "skills": profile.skills if profile else [],
+    }
+
+
+async def _application_read(db: AsyncSession, application: Application) -> dict:
     # Built by hand rather than relying on ApplicationRead's from_attributes
     # auto-mapping: Application.applicant is a full User ORM object (id,
     # clerk_user_id, email, account_type, ...), and ApplicantRead's field
     # is named user_id, not id — a real mismatch caught by this endpoint's
     # own test (ResponseValidationError) before it shipped. Explicit here
     # both fixes that and is what actually enforces "no private user
-    # fields beyond user_id/email leak to a company" (ApplicantRead's own
-    # docstring) — from_attributes on the full User object would happily
+    # fields beyond user_id/email/readiness leak to a company" (ApplicantRead's
+    # own docstring) — from_attributes on the full User object would happily
     # serialize whatever ApplicantRead declares, but only because
     # ApplicantRead stays deliberately minimal, not because this call site
     # does; being explicit here removes that reliance.
@@ -129,7 +160,11 @@ def _application_read(application: Application) -> dict:
         "id": application.id,
         "status": application.status,
         "created_at": application.created_at,
-        "applicant": {"user_id": application.applicant.id, "email": application.applicant.email},
+        "applicant": {
+            "user_id": application.applicant.id,
+            "email": application.applicant.email,
+            "readiness": await _candidate_readiness(db, application.applicant.id),
+        },
     }
 
 
@@ -140,7 +175,7 @@ async def list_applications(
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     opportunity = await _owned_opportunity(db, user, opportunity_id, with_applications=True)
-    return [_application_read(a) for a in opportunity.applications]
+    return [await _application_read(db, a) for a in opportunity.applications]
 
 
 @company_router.patch("/{opportunity_id}/applications/{application_id}", response_model=ApplicationRead)
@@ -167,7 +202,7 @@ async def update_application_status(
     db.add(application)
     await db.commit()
     await db.refresh(application, attribute_names=["applicant"])
-    return _application_read(application)
+    return await _application_read(db, application)
 
 
 # --- Any authenticated user: browse + apply ---------------------------------

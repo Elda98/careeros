@@ -115,12 +115,14 @@ def test_apply_then_company_sees_application_then_updates_status(client: TestCli
     finally:
         _reset()
 
-    # Back to the company: sees the applicant, no private career data leaked.
+    # Back to the company: sees the applicant plus the safe readiness
+    # snapshot, no raw private career data leaked.
     applications = client.get(f"/company/opportunities/{opportunity_id}/applications")
     assert applications.status_code == 200
     assert len(applications.json()) == 1
     applicant = applications.json()[0]["applicant"]
-    assert set(applicant.keys()) == {"user_id", "email"}
+    assert set(applicant.keys()) == {"user_id", "email", "readiness"}
+    assert set(applicant["readiness"].keys()) == {"target_role", "target_field", "confidence", "skills"}
 
     update = client.patch(
         f"/company/opportunities/{opportunity_id}/applications/{application_id}",
@@ -128,6 +130,41 @@ def test_apply_then_company_sees_application_then_updates_status(client: TestCli
     )
     assert update.status_code == 200
     assert update.json()["status"] == "accepted"
+
+
+def test_application_readiness_exposes_declared_data_not_raw_career_graph(client: TestClient) -> None:
+    """Milestone 5 (ecosystem connection): a company sees the candidate's
+    safe CandidateReadinessRead snapshot (target role, top-line confidence,
+    declared skills) but never the raw Profile text or Skill-Gap Analysis
+    reasoning that produced it."""
+    _become_company(client, name="Acme Robotics")
+    created = client.post("/company/opportunities", json={"title": "Backend Intern"})
+    opportunity_id = created.json()["id"]
+
+    try:
+        _as(STUDENT_CLERK_ID)
+        client.put("/account/type", json={"account_type": "student"})
+        client.patch("/profile", json={"background": "Confidential background details", "skills": ["Python"]})
+        client.post("/profile/goals", json={"target_role": "Backend Engineer"})
+        client.post("/ai-career-center/skill-gap-analysis/refresh")
+        client.post(f"/opportunities/{opportunity_id}/apply")
+    finally:
+        _reset()
+
+    applications = client.get(f"/company/opportunities/{opportunity_id}/applications")
+    body = applications.json()
+    readiness = body[0]["applicant"]["readiness"]
+    assert readiness == {
+        "target_role": "Backend Engineer",
+        "target_field": "",
+        "confidence": "high",
+        "skills": ["Python"],
+    }
+    # The raw Profile text and the analysis's private reasoning must never
+    # appear anywhere in the response, under any key.
+    raw = str(body)
+    assert "Confidential background details" not in raw
+    assert "fake agent" not in raw
 
 
 def test_cannot_apply_to_a_closed_opportunity(client: TestClient) -> None:

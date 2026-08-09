@@ -180,7 +180,10 @@
       "high": "فجوة حرجة",
       "medium": "فجوة متوسطة",
       "low": "فجوة بسيطة"
-    }
+    },
+    "recommendedServicesTitle": "احصل على دعم لسد هذه الفجوات",
+    "recommendedServicesSubtitle": "خدمات على Orbit ذات صلة بالفجوات أعلاه.",
+    "browseAllServices": "تصفح جميع الخدمات"
   },
   "roadmap": {
     "eyebrow": "خارطة طريقك",
@@ -580,7 +583,8 @@
     "alreadyApplied": "لقد تقدمت لهذه الفرصة بالفعل",
     "applyError": "تعذّر إرسال طلبك",
     "myApplications": "طلباتك",
-    "noApplicationsYet": "لم تتقدم لأي فرصة بعد."
+    "noApplicationsYet": "لم تتقدم لأي فرصة بعد.",
+    "candidateTargetRole": "يستهدف: {{role}}"
   },
   "providerServices": {
     "postNew": "إضافة خدمة",

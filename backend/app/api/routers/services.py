@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db, require_account_type
-from app.db.models import AccountType, ServiceListing, ServiceListingStatus, User
+from app.db.models import AccountType, ServiceListing, ServiceListingStatus, SkillGapAnalysis, User
 from app.schemas.ecosystem import (
     ServiceListingCreate,
     ServiceListingRead,
@@ -86,6 +86,16 @@ async def update_service_listing(
     return listing
 
 
+def _with_provider(listing: ServiceListing) -> dict:
+    provider = listing.provider_profile
+    return {
+        **ServiceListingRead.model_validate(listing).model_dump(),
+        "provider_title": provider.professional_title,
+        "provider_expertise": provider.expertise,
+        "provider_contact_info": provider.contact_info,
+    }
+
+
 @router.get("/services", response_model=list[ServiceListingWithProviderRead])
 async def browse_services(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> list[dict]:
     result = await db.execute(
@@ -95,18 +105,45 @@ async def browse_services(user: User = Depends(get_current_user), db: AsyncSessi
         .order_by(ServiceListing.created_at.desc())
     )
     listings = result.scalars().all()
-    out = []
-    for listing in listings:
-        provider = listing.provider_profile
-        out.append(
-            {
-                **ServiceListingRead.model_validate(listing).model_dump(),
-                "provider_title": provider.professional_title,
-                "provider_expertise": provider.expertise,
-                "provider_contact_info": provider.contact_info,
-            }
-        )
-    return out
+    return [_with_provider(listing) for listing in listings]
+
+
+@router.get("/services/recommended", response_model=list[ServiceListingWithProviderRead])
+async def recommended_services(
+    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> list[dict]:
+    """Phase 7's Student/Graduate -> Skill Gap -> Needed Support -> Service
+    Providers connection. Deliberately plain keyword matching against the
+    caller's own latest Skill-Gap Analysis gap names, not an LLM call: this
+    is a structural ecosystem connection (Milestone 5), not the AI-matching
+    milestone (Milestone 6) — matching only ever runs against the caller's
+    own gaps, so it can't leak another user's private analysis."""
+    analysis_result = await db.execute(
+        select(SkillGapAnalysis)
+        .where(SkillGapAnalysis.user_id == user.id)
+        .options(selectinload(SkillGapAnalysis.gaps))
+        .order_by(SkillGapAnalysis.version.desc())
+        .limit(1)
+    )
+    analysis = analysis_result.scalar_one_or_none()
+    gap_skills = [gap.skill.lower() for gap in analysis.gaps] if analysis else []
+    if not gap_skills:
+        return []
+
+    result = await db.execute(
+        select(ServiceListing)
+        .where(ServiceListing.status == ServiceListingStatus.ACTIVE)
+        .options(selectinload(ServiceListing.provider_profile))
+        .order_by(ServiceListing.created_at.desc())
+    )
+    listings = result.scalars().all()
+
+    def _matches(listing: ServiceListing) -> bool:
+        haystack = f"{listing.title} {listing.category} {listing.description}".lower()
+        return any(skill in haystack for skill in gap_skills)
+
+    matched = [listing for listing in listings if _matches(listing)]
+    return [_with_provider(listing) for listing in matched[:5]]
 
 
 router.include_router(provider_router)

@@ -180,7 +180,10 @@
       "high": "Critical gap",
       "medium": "Moderate gap",
       "low": "Minor gap"
-    }
+    },
+    "recommendedServicesTitle": "Get support closing these gaps",
+    "recommendedServicesSubtitle": "Services on Orbit related to the gaps above.",
+    "browseAllServices": "Browse all services"
   },
   "roadmap": {
     "eyebrow": "Your roadmap",
@@ -580,7 +583,8 @@
     "alreadyApplied": "You've already applied",
     "applyError": "Couldn't submit your application",
     "myApplications": "Your applications",
-    "noApplicationsYet": "You haven't applied to anything yet."
+    "noApplicationsYet": "You haven't applied to anything yet.",
+    "candidateTargetRole": "Targeting: {{role}}"
   },
   "providerServices": {
     "postNew": "Add a service",

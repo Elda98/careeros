@@ -119,9 +119,21 @@ export interface JobOpportunityWithCompanyRead extends JobOpportunityRead {
   company_name: string;
 }
 
+/** The safe, public-facing candidate readiness snapshot a Company is
+ * allowed to see on an applicant — never the candidate's raw Profile text
+ * or Skill-Gap Analysis reasoning (see backend/app/schemas/ecosystem.py's
+ * CandidateReadinessRead docstring). */
+export interface CandidateReadinessRead {
+  target_role: string | null;
+  target_field: string | null;
+  confidence: ConfidenceLevel | null;
+  skills: string[];
+}
+
 export interface ApplicantRead {
   user_id: string;
   email: string;
+  readiness: CandidateReadinessRead;
 }
 
 export interface ApplicationRead {
