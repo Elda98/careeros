@@ -9,6 +9,8 @@ so it stays hermetic (no live Redis required).
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from app.core import rate_limit
@@ -18,9 +20,13 @@ from app.core.rate_limit import MAX_REQUESTS_PER_WINDOW, enforce_rate_limit
 class _FakeRedisClient:
     """Minimal fake matching the three calls enforce_rate_limit actually
     makes (`incr`, `expire`, `aclose`) — a real in-memory counter, not a
-    canned return value, so the fixed-window logic is genuinely exercised."""
+    canned return value, so the fixed-window logic is genuinely exercised.
+    Deliberately class-level (not per-instance): `enforce_rate_limit`
+    constructs a fresh client per call, and the counter must still
+    accumulate across those calls within one test — cross-*test* isolation
+    is handled separately by the `_reset_fake_redis` autouse fixture below."""
 
-    _counters: dict[str, int] = {}
+    _counters: ClassVar[dict[str, int]] = {}
 
     def __init__(self, *_, **__):
         pass

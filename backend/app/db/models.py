@@ -60,6 +60,28 @@ class SubscriptionStatus(str, enum.Enum):
     CANCELED = "canceled"
 
 
+class AccountType(str, enum.Enum):
+    """Which of the four Orbit personas this user's account is (product
+    vision docs/01-Product/PRD.md §8/§16: Student and Fresh Graduate are
+    individual career-seeker personas — they share the entire Career
+    Knowledge Graph / AI Career Center below unchanged; Company and
+    Service Provider are ecosystem personas with their own profile tables
+    (CompanyProfile, ServiceProviderProfile) and no access to career-seeker
+    data beyond what a candidate explicitly exposes (see
+    app/schemas/ecosystem.py's CandidateReadinessRead).
+
+    Nullable on User (below) rather than defaulting to STUDENT: a brand
+    new sign-up hasn't chosen yet and must see the role-selection screen;
+    every user that existed before this column was added is backfilled to
+    STUDENT in the migration itself, since that was the only persona that
+    existed (see migrations/versions — the account_type migration)."""
+
+    STUDENT = "student"
+    GRADUATE = "graduate"
+    COMPANY = "company"
+    SERVICE_PROVIDER = "service_provider"
+
+
 # --- Account-level data (outside the Career Knowledge Graph, SAS §3.5) -----
 
 
@@ -73,6 +95,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = _uuid_pk()
     clerk_user_id: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    account_type: Mapped[AccountType | None] = mapped_column(Enum(AccountType), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     profile: Mapped[Profile | None] = relationship(back_populates="user", uselist=False)
@@ -81,6 +104,53 @@ class User(Base):
     notification_preference: Mapped[NotificationPreference | None] = relationship(
         back_populates="user", uselist=False
     )
+    company_profile: Mapped[CompanyProfile | None] = relationship(back_populates="user", uselist=False)
+    service_provider_profile: Mapped[ServiceProviderProfile | None] = relationship(
+        back_populates="user", uselist=False
+    )
+
+
+class CompanyProfile(Base):
+    """Ecosystem persona (AccountType.COMPANY). Distinct from the Career
+    Knowledge Graph's Profile — a company has no skills/goal/gap, it has
+    an identity a job seeker sees attached to a JobOpportunity."""
+
+    __tablename__ = "company_profiles"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = _uuid_fk("users.id", unique=True, nullable=False)
+    company_name: Mapped[str] = mapped_column(String, nullable=False)
+    industry: Mapped[str] = mapped_column(String, default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    website: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="company_profile")
+
+
+class ServiceProviderProfile(Base):
+    """Ecosystem persona (AccountType.SERVICE_PROVIDER). A provider's
+    professional identity — what they offer and how to reach them —
+    distinct from a career-seeker's Profile (no goal/skill-gap concept
+    applies to a provider)."""
+
+    __tablename__ = "service_provider_profiles"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = _uuid_fk("users.id", unique=True, nullable=False)
+    professional_title: Mapped[str] = mapped_column(String, nullable=False)
+    expertise: Mapped[list[str]] = mapped_column(JSON, default=list)
+    description: Mapped[str] = mapped_column(Text, default="")
+    contact_info: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped[User] = relationship(back_populates="service_provider_profile")
 
 
 class Subscription(Base):

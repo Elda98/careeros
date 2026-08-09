@@ -11,7 +11,7 @@ from app.core.auth import get_current_user_id
 from app.core.clerk_admin import ClerkAdminClient
 from app.core.clerk_admin import get_clerk_admin_client as _build_clerk_admin_client
 from app.core.config import Settings, get_settings
-from app.db.models import User
+from app.db.models import AccountType, User
 from app.db.session import get_db
 
 from careeros_ai.agents.cv_feedback import CVFeedbackAgent
@@ -33,6 +33,7 @@ __all__ = [
     "get_explainability_llm",
     "get_roadmap_agent",
     "get_skill_gap_analysis_agent",
+    "require_account_type",
 ]
 
 _USER_LOAD_OPTIONS = (
@@ -40,6 +41,8 @@ _USER_LOAD_OPTIONS = (
     selectinload(User.goals),
     selectinload(User.subscription),
     selectinload(User.notification_preference),
+    selectinload(User.company_profile),
+    selectinload(User.service_provider_profile),
 )
 
 
@@ -153,6 +156,31 @@ def get_career_supervisor() -> CareerSupervisor:
             "could not connect to the database.",
         )
     return CareerSupervisor(_skill_gap_analysis_agent(), _roadmap_agent(), checkpointer)
+
+
+def require_account_type(*allowed: AccountType):
+    """Server-side role enforcement (SDAIA rubric Phase 9 / PRD's ecosystem
+    personas): builds a FastAPI dependency that 403s unless the
+    *authenticated, already-persisted* `user.account_type` is one of
+    `allowed`. The role is always read back from the user's own database
+    row via `get_current_user` — never accepted from a header, query
+    param, or request body — so a client cannot claim a role it wasn't
+    actually assigned server-side (`PUT /account/type`, `account.py`).
+
+    Used as `Depends(require_account_type(AccountType.COMPANY))` on every
+    company-only endpoint (job posting, applicant review) and
+    `Depends(require_account_type(AccountType.SERVICE_PROVIDER))` on every
+    provider-only endpoint (service listing management)."""
+
+    async def _dependency(user: User = Depends(get_current_user)) -> User:
+        if user.account_type not in allowed:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                f"This action requires account type {', '.join(a.value for a in allowed)}.",
+            )
+        return user
+
+    return _dependency
 
 
 def get_clerk_admin_client(settings: Settings = Depends(get_settings)) -> ClerkAdminClient:

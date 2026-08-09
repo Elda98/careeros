@@ -31,7 +31,7 @@ lint-frontend:
 	cd frontend && npm run lint
 
 lint-backend:
-	cd backend && ruff check app/ ../ai/careeros_ai/
+	cd backend && ruff check app/ tests/ ../ai/careeros_ai/
 
 verify-e2e:
 	docker compose -f docker/docker-compose.yml exec backend python -m scripts.verify_e2e

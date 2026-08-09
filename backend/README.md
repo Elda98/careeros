@@ -58,7 +58,7 @@ The `ai/` package additionally has 16 of its own tests (`cd ai && pytest tests/`
 ### Linting
 
 ```bash
-ruff check app/ ../ai/careeros_ai/
+ruff check app/ tests/ ../ai/careeros_ai/
 ```
 
 Configured in `pyproject.toml`'s `[tool.ruff]` — `B008` (function-call-in-default-argument) is deliberately ignored, since FastAPI's `param: T = Depends(fn)` dependency-injection idiom requires exactly that pattern; flagging it would mean either false-positiving on ~80 correct route signatures or disabling the rule everywhere it doesn't apply. `BLE001` (blind `except Exception`) is enabled — every genuinely-needed broad catch in this codebase carries an explicit, current `# noqa: BLE001` with a stated reason (a tool failure becoming a ReAct observation, a generation failure feeding the retry loop); every other `except Exception` re-raises a specific, controlled exception and needs no suppression.
