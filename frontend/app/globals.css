@@ -21,40 +21,46 @@
 
 @layer base {
   :root {
-    /* Surfaces — layered, not flat. */
-    --background: 262 22% 9%;
-    --foreground: 260 25% 96%;
+    /* Surfaces — layered, not flat. Retuned to the Orbit workflow reference's
+       exact palette (deep navy-violet background, glowing violet primary) —
+       #050318 / #0B0820 / #6C63FF / #8B5CF6 / #A78BFA / #F8FAFC / #A1A1AA,
+       converted to this file's HSL-triple convention. Structure (surface/
+       sidebar/card layering, semantic destructive/success/warning) is
+       unchanged — only the brand hue family and its lightness curve moved. */
+    --background: 246 78% 5%;
+    --foreground: 210 40% 98%;
 
-    --surface: 262 18% 13%;
-    --surface-foreground: 260 25% 96%;
-    --surface-hover: 262 18% 17%;
+    --surface: 248 55% 9%;
+    --surface-foreground: 210 40% 98%;
+    --surface-hover: 248 45% 13%;
 
-    --sidebar: 262 25% 7%;
-    --sidebar-foreground: 260 12% 72%;
-    --sidebar-active: 262 20% 16%;
-    --sidebar-active-foreground: 260 25% 97%;
+    --sidebar: 246 78% 4%;
+    --sidebar-foreground: 240 8% 68%;
+    --sidebar-active: 248 45% 15%;
+    --sidebar-active-foreground: 210 40% 98%;
 
-    --card: 262 18% 13%;
-    --card-foreground: 260 25% 96%;
+    --card: 248 55% 9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 262 20% 14%;
-    --popover-foreground: 260 25% 96%;
+    --popover: 248 50% 10%;
+    --popover-foreground: 210 40% 98%;
 
-    /* Brand — royal purple, the logo's core/ring color. Used deliberately
-       (calls to action, active nav state, focus rings, confidence-high),
-       never scattered. */
-    --primary: 262 85% 60%;
+    /* Brand — the workflow reference's primary violet (#6C63FF), with its
+       bright violet (#8B5CF6) as the hover state. Used deliberately (calls
+       to action, active nav state, focus rings, confidence-high), never
+       scattered. */
+    --primary: 244 100% 69%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 262 85% 66%;
+    --primary-hover: 258 90% 66%;
 
-    --secondary: 262 15% 19%;
-    --secondary-foreground: 260 15% 92%;
+    --secondary: 250 35% 16%;
+    --secondary-foreground: 240 20% 92%;
 
-    --muted: 262 15% 17%;
-    --muted-foreground: 260 10% 65%;
+    --muted: 250 30% 14%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 262 15% 20%;
-    --accent-foreground: 260 25% 97%;
+    --accent: 250 30% 17%;
+    --accent-foreground: 210 40% 98%;
 
     /* The logo's soft-rose secondary ring — a genuine second brand color,
        distinct from --accent (which is a UI-mechanical hover-state token).
@@ -71,22 +77,23 @@
     --warning: 38 88% 60%;
     --warning-foreground: 262 22% 8%;
 
-    --border: 262 15% 20%;
-    --border-subtle: 262 15% 15%;
-    --input: 262 15% 21%;
-    --ring: 262 85% 60%;
+    --border: 251 40% 20%;
+    --border-subtle: 251 30% 14%;
+    --input: 251 35% 21%;
+    --ring: 244 100% 69%;
 
-    /* The logo's lavender secondary ring — used in marketing gradients
-       alongside --primary. The product UI stays disciplined to one accent. */
-    --gradient-accent: 248 78% 78%;
+    /* The workflow reference's accent purple (#A78BFA) — marketing
+       gradients and decorative glow, alongside --primary. The product UI
+       stays disciplined to one accent. */
+    --gradient-accent: 255 92% 76%;
 
     /* Larger, softer radius than a typical SaaS dashboard — matches the
        logo's circular/orbital, pill-button shape language. */
     --radius: 1.1rem;
 
-    /* Elevation — soft, purple-tinted shadows (never neutral gray), per
-       the logo's warm personality. */
-    --shadow-color: 262 40% 4%;
+    /* Elevation — soft, violet-tinted shadows (never neutral gray), per
+       the new deep-navy brand background. */
+    --shadow-color: 246 78% 3%;
   }
 
   [data-theme="light"] {
