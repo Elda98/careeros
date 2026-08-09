@@ -217,6 +217,39 @@ class Application(Base):
     applicant: Mapped[User] = relationship()
 
 
+class ServiceListingStatus(str, enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+class ServiceListing(Base):
+    """Service Provider MVP (PRD §16 Services Marketplace, brought forward
+    as part of the role-based ecosystem evolution — that PRD module was
+    Unscheduled/no-phase-assigned; this is the first real implementation
+    of any of it). Owned exclusively by the posting
+    ServiceProviderProfile, same discipline as JobOpportunity/
+    CompanyProfile. No request/booking entity yet (PRD §16's "requests"
+    capability) — this milestone is listing + discovery only, matching
+    what was actually scoped for it."""
+
+    __tablename__ = "service_listings"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    provider_profile_id: Mapped[uuid.UUID] = _uuid_fk("service_provider_profiles.id", nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    category: Mapped[str] = mapped_column(String, default="")
+    status: Mapped[ServiceListingStatus] = mapped_column(
+        Enum(ServiceListingStatus), default=ServiceListingStatus.ACTIVE
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    provider_profile: Mapped[ServiceProviderProfile] = relationship()
+
+
 class Subscription(Base):
     """Settings module (FR-SET-1, FR-SET-4). Account-level, explicitly
     outside the Career Knowledge Graph (PRD §24.12 scope discipline)."""

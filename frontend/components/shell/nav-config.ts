@@ -8,6 +8,7 @@ import {
   UserCircle,
   Settings,
   Briefcase,
+  HandHeart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/skill-gap-analysis", labelKey: "nav.skillGapAnalysis", icon: Target },
   { href: "/roadmap", labelKey: "nav.roadmap", icon: Route },
   { href: "/opportunities", labelKey: "nav.opportunities", icon: Briefcase },
+  { href: "/services", labelKey: "nav.services", icon: HandHeart },
   { href: "/cv-feedback", labelKey: "nav.cvFeedback", icon: FileText },
   { href: "/notifications", labelKey: "nav.notifications", icon: Bell },
   { href: "/progress", labelKey: "nav.progress", icon: TrendingUp },

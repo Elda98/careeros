@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
-import type { AccountTypeRead, ServiceProviderProfileRead } from "@/lib/types";
+import type { AccountTypeRead, ServiceListingRead, ServiceProviderProfileRead } from "@/lib/types";
 
 import { ProviderDashboardView } from "./provider-dashboard-view";
 
@@ -15,6 +15,7 @@ export default async function ProviderDashboardPage() {
 
   let redirectTarget: string | null = null;
   let profile: ServiceProviderProfileRead | null = null;
+  let services: ServiceListingRead[] = [];
   try {
     const accountType = await apiFetch<AccountTypeRead>("/account/type", { token });
     if (accountType.account_type === null) {
@@ -25,6 +26,8 @@ export default async function ProviderDashboardPage() {
       profile = await apiFetch<ServiceProviderProfileRead>("/account/service-provider-profile", { token });
       if (!profile.professional_title) {
         redirectTarget = "/provider/onboarding";
+      } else {
+        services = await apiFetch<ServiceListingRead[]>("/provider/services", { token });
       }
     }
   } catch {
@@ -34,5 +37,5 @@ export default async function ProviderDashboardPage() {
     redirect(redirectTarget);
   }
 
-  return <ProviderDashboardView profile={profile} />;
+  return <ProviderDashboardView profile={profile} services={services} />;
 }

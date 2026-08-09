@@ -43,6 +43,7 @@
     "skillGapAnalysis": "Skill-Gap Analysis",
     "roadmap": "Roadmap",
     "opportunities": "Opportunities",
+    "services": "Services",
     "cvFeedback": "CV Feedback",
     "notifications": "Notifications",
     "progress": "Progress",
@@ -532,8 +533,7 @@
   "providerDashboard": {
     "welcome": "Welcome, {{name}}",
     "subtitle": "Your service provider workspace on Orbit.",
-    "editProfile": "Edit provider profile",
-    "comingSoon": "Service listings and discovery are the next milestone — your provider profile is saved and ready."
+    "editProfile": "Edit provider profile"
   },
   "opportunities": {
     "postNew": "Post an opportunity",
@@ -581,5 +581,28 @@
     "applyError": "Couldn't submit your application",
     "myApplications": "Your applications",
     "noApplicationsYet": "You haven't applied to anything yet."
+  },
+  "providerServices": {
+    "postNew": "Add a service",
+    "form": {
+      "titleLabel": "Service title",
+      "titlePlaceholder": "e.g. CV Review, Mock Interview Coaching",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "e.g. Career Coaching, Tutoring, Design",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "What do you offer, and who is it for?",
+      "submit": "Publish service",
+      "error": "Couldn't publish this service"
+    },
+    "yourServices": "Your services",
+    "noServices": "You haven't published any services yet.",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "browseTitle": "Services",
+    "browseSubtitle": "Professional services offered by people on Orbit — tutoring, coaching, reviews, and more.",
+    "noActiveServices": "No active services right now — check back soon.",
+    "contact": "Contact"
   }
 }

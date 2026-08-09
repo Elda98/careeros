@@ -43,6 +43,7 @@
     "skillGapAnalysis": "تحليل الفجوة المهارية",
     "roadmap": "خارطة الطريق",
     "opportunities": "الفرص",
+    "services": "الخدمات",
     "cvFeedback": "تقييم السيرة الذاتية",
     "notifications": "الإشعارات",
     "progress": "التقدم",
@@ -532,8 +533,7 @@
   "providerDashboard": {
     "welcome": "مرحبًا، {{name}}",
     "subtitle": "مساحة عمل مقدم الخدمة في Orbit.",
-    "editProfile": "تعديل الملف الشخصي",
-    "comingSoon": "قوائم الخدمات واكتشافها هما المرحلة القادمة — ملفك محفوظ وجاهز."
+    "editProfile": "تعديل الملف الشخصي"
   },
   "opportunities": {
     "postNew": "نشر فرصة",
@@ -581,5 +581,28 @@
     "applyError": "تعذّر إرسال طلبك",
     "myApplications": "طلباتك",
     "noApplicationsYet": "لم تتقدم لأي فرصة بعد."
+  },
+  "providerServices": {
+    "postNew": "إضافة خدمة",
+    "form": {
+      "titleLabel": "عنوان الخدمة",
+      "titlePlaceholder": "مثال: مراجعة السيرة الذاتية، تدريب على المقابلات",
+      "categoryLabel": "الفئة",
+      "categoryPlaceholder": "مثال: التوجيه المهني، التدريس، التصميم",
+      "descriptionLabel": "الوصف",
+      "descriptionPlaceholder": "ماذا تقدّم، ولمن؟",
+      "submit": "نشر الخدمة",
+      "error": "تعذّر نشر هذه الخدمة"
+    },
+    "yourServices": "خدماتك",
+    "noServices": "لم تنشر أي خدمة بعد.",
+    "statusActive": "نشطة",
+    "statusInactive": "غير نشطة",
+    "deactivate": "إيقاف",
+    "activate": "تفعيل",
+    "browseTitle": "الخدمات",
+    "browseSubtitle": "خدمات مهنية يقدمها أشخاص على Orbit — تدريس، توجيه، مراجعة، وأكثر.",
+    "noActiveServices": "لا توجد خدمات نشطة حاليًا — تحقق مرة أخرى قريبًا.",
+    "contact": "التواصل"
   }
 }

@@ -138,6 +138,36 @@ export interface MyApplicationRead {
   opportunity: JobOpportunityWithCompanyRead;
 }
 
+export type ServiceListingStatus = "active" | "inactive";
+
+export interface ServiceListingCreate {
+  title: string;
+  description?: string;
+  category?: string;
+}
+
+export interface ServiceListingUpdate {
+  title?: string;
+  description?: string;
+  category?: string;
+  status?: ServiceListingStatus;
+}
+
+export interface ServiceListingRead {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: ServiceListingStatus;
+  created_at: string;
+}
+
+export interface ServiceListingWithProviderRead extends ServiceListingRead {
+  provider_title: string;
+  provider_expertise: string[];
+  provider_contact_info: string;
+}
+
 export interface SkillGapItemRead {
   id: string;
   skill: string;

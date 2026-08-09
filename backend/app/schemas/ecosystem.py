@@ -10,7 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.db.models import ApplicationStatus, OpportunityStatus, OpportunityType
+from app.db.models import ApplicationStatus, OpportunityStatus, OpportunityType, ServiceListingStatus
 
 
 class JobOpportunityCreate(BaseModel):
@@ -93,3 +93,36 @@ class MyApplicationRead(BaseModel):
     opportunity: JobOpportunityWithCompanyRead
 
     model_config = {"from_attributes": True}
+
+
+class ServiceListingCreate(BaseModel):
+    title: str
+    description: str = ""
+    category: str = ""
+
+
+class ServiceListingUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    category: str | None = None
+    status: ServiceListingStatus | None = None
+
+
+class ServiceListingRead(BaseModel):
+    id: UUID
+    title: str
+    description: str
+    category: str
+    status: ServiceListingStatus
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ServiceListingWithProviderRead(ServiceListingRead):
+    """The discovery-facing shape — includes the provider's public
+    identity, same reasoning as JobOpportunityWithCompanyRead."""
+
+    provider_title: str
+    provider_expertise: list[str]
+    provider_contact_info: str
