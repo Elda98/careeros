@@ -470,5 +470,69 @@
       "roadmapTitle": "خارطة طريقك",
       "roadmapSteps": "تم إنشاء {{count}} خطوة"
     }
+  },
+  "roleSelection": {
+    "title": "كيف ستستخدم Orbit؟",
+    "description": "هذا يحدد تجربتك — يمكنك بناء مسيرتك المهنية، أو التوظيف، أو تقديم خدماتك، كل هذا على نفس المنصة.",
+    "student": {
+      "name": "طالب",
+      "description": "طوّر مهاراتك واستعد لمسيرتك المهنية."
+    },
+    "graduate": {
+      "name": "خريج",
+      "description": "حوّل مهاراتك إلى فرصتك المهنية القادمة."
+    },
+    "company": {
+      "name": "شركة",
+      "description": "اكتشف وتواصل مع مواهب واعدة."
+    },
+    "serviceProvider": {
+      "name": "مقدم خدمة",
+      "description": "قدّم خدماتك المهنية لمن يحتاجها."
+    },
+    "continue": "متابعة",
+    "error": "تعذّر حفظ اختيارك — حاول مرة أخرى"
+  },
+  "companyOnboarding": {
+    "title": "أخبرنا عن شركتك",
+    "description": "هذا ما سيراه المرشحون ونظام المطابقة في Orbit — يمكنك تعديله لاحقًا من لوحة التحكم.",
+    "nameLabel": "اسم الشركة",
+    "namePlaceholder": "مثال: شركة أكمي للروبوتات",
+    "industryLabel": "المجال",
+    "industryPlaceholder": "مثال: الروبوتات، التقنية المالية، الرعاية الصحية",
+    "websiteLabel": "الموقع الإلكتروني",
+    "websitePlaceholder": "https://",
+    "descriptionLabel": "نبذة عن الشركة",
+    "descriptionPlaceholder": "ماذا تعمل شركتك، وما نوع المواهب التي تبحث عنها؟",
+    "submit": "المتابعة إلى لوحة التحكم",
+    "error": "تعذّر حفظ ملف شركتك"
+  },
+  "providerOnboarding": {
+    "title": "أنشئ ملف مقدم الخدمة الخاص بك",
+    "description": "هذا ما سيعرضه Orbit للباحثين عن فرص يحتاجون مساعدتك — يمكنك تعديله لاحقًا.",
+    "titleLabel": "المسمى المهني",
+    "titlePlaceholder": "مثال: مدرب مسيرة مهنية، مراجع سير ذاتية، مدرّس بايثون",
+    "expertiseLabel": "مجالات الخبرة",
+    "expertisePlaceholder": "مثال: مراجعة السيرة الذاتية",
+    "addExpertise": "إضافة",
+    "removeExpertise": "إزالة {{skill}}",
+    "descriptionLabel": "صف خدماتك",
+    "descriptionPlaceholder": "ماذا تقدّم، ولمن؟",
+    "contactLabel": "التواصل / التوفر",
+    "contactPlaceholder": "كيف يمكن للناس التواصل معك، ومتى تكون متاحًا؟",
+    "submit": "المتابعة إلى لوحة التحكم",
+    "error": "تعذّر حفظ ملف مقدم الخدمة"
+  },
+  "companyDashboard": {
+    "welcome": "مرحبًا، {{company}}",
+    "subtitle": "مساحة عمل شركتك في Orbit.",
+    "editProfile": "تعديل ملف الشركة",
+    "comingSoon": "نشر الوظائف ومطابقة المرشحين هما المرحلة القادمة — ملف شركتك محفوظ وجاهز."
+  },
+  "providerDashboard": {
+    "welcome": "مرحبًا، {{name}}",
+    "subtitle": "مساحة عمل مقدم الخدمة في Orbit.",
+    "editProfile": "تعديل الملف الشخصي",
+    "comingSoon": "قوائم الخدمات واكتشافها هما المرحلة القادمة — ملفك محفوظ وجاهز."
   }
 }

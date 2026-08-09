@@ -44,6 +44,45 @@ export interface OnboardingStatusRead {
   onboarding_completed: boolean;
 }
 
+/** Which of the four Orbit personas this account is — mirrors
+ * backend/app/db/models.py's AccountType. `null` means the user hasn't
+ * chosen yet (the role-selection screen's trigger condition). */
+export type AccountType = "student" | "graduate" | "company" | "service_provider";
+
+export interface AccountTypeRead {
+  account_type: AccountType | null;
+}
+
+export interface CompanyProfileRead {
+  id: string;
+  company_name: string;
+  industry: string;
+  description: string;
+  website: string;
+}
+
+export interface CompanyProfileUpdate {
+  company_name?: string;
+  industry?: string;
+  description?: string;
+  website?: string;
+}
+
+export interface ServiceProviderProfileRead {
+  id: string;
+  professional_title: string;
+  expertise: string[];
+  description: string;
+  contact_info: string;
+}
+
+export interface ServiceProviderProfileUpdate {
+  professional_title?: string;
+  expertise?: string[];
+  description?: string;
+  contact_info?: string;
+}
+
 export interface SkillGapItemRead {
   id: string;
   skill: string;

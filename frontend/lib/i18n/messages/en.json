@@ -470,5 +470,69 @@
       "roadmapTitle": "Your roadmap",
       "roadmapSteps": "{{count}} steps generated"
     }
+  },
+  "roleSelection": {
+    "title": "How will you use Orbit?",
+    "description": "This determines your experience — you can build a career, hire, or offer your services, all on the same platform.",
+    "student": {
+      "name": "Student",
+      "description": "Build your skills and prepare for your career."
+    },
+    "graduate": {
+      "name": "Graduate",
+      "description": "Turn your skills into your next career opportunity."
+    },
+    "company": {
+      "name": "Company",
+      "description": "Find and connect with emerging talent."
+    },
+    "serviceProvider": {
+      "name": "Service Provider",
+      "description": "Offer professional services to people who need them."
+    },
+    "continue": "Continue",
+    "error": "Couldn't save your selection — please try again"
+  },
+  "companyOnboarding": {
+    "title": "Tell us about your company",
+    "description": "This is what candidates and Orbit's matching will see — you can always edit it later in your dashboard.",
+    "nameLabel": "Company name",
+    "namePlaceholder": "e.g. Acme Robotics",
+    "industryLabel": "Industry",
+    "industryPlaceholder": "e.g. Robotics, Fintech, Healthcare",
+    "websiteLabel": "Website",
+    "websitePlaceholder": "https://",
+    "descriptionLabel": "About the company",
+    "descriptionPlaceholder": "What does your company do, and what kind of talent are you looking for?",
+    "submit": "Continue to dashboard",
+    "error": "Couldn't save your company profile"
+  },
+  "providerOnboarding": {
+    "title": "Set up your provider profile",
+    "description": "This is what Orbit shows career-seekers who could use your help — you can always edit it later.",
+    "titleLabel": "Professional title",
+    "titlePlaceholder": "e.g. Career Coach, CV Reviewer, Python Tutor",
+    "expertiseLabel": "Areas of expertise",
+    "expertisePlaceholder": "e.g. Resume Review",
+    "addExpertise": "Add",
+    "removeExpertise": "Remove {{skill}}",
+    "descriptionLabel": "Describe your services",
+    "descriptionPlaceholder": "What do you offer, and who is it for?",
+    "contactLabel": "Contact / availability",
+    "contactPlaceholder": "How should people reach you, and when are you available?",
+    "submit": "Continue to dashboard",
+    "error": "Couldn't save your provider profile"
+  },
+  "companyDashboard": {
+    "welcome": "Welcome, {{company}}",
+    "subtitle": "Your company workspace on Orbit.",
+    "editProfile": "Edit company profile",
+    "comingSoon": "Job postings and candidate matching are the next milestone — your company profile is saved and ready."
+  },
+  "providerDashboard": {
+    "welcome": "Welcome, {{name}}",
+    "subtitle": "Your service provider workspace on Orbit.",
+    "editProfile": "Edit provider profile",
+    "comingSoon": "Service listings and discovery are the next milestone — your provider profile is saved and ready."
   }
 }
