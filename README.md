@@ -13,6 +13,7 @@ Orbit is the public, user-facing brand name for **CareerOS**, an AI-native platf
 - [Problem statement](#problem-statement)
 - [Solution](#solution)
 - [Features](#features)
+- [Role-based ecosystem](#role-based-ecosystem)
 - [AI architecture](#ai-architecture)
 - [Multi-agent overview](#multi-agent-overview)
 - [Tech stack](#tech-stack)
@@ -63,6 +64,38 @@ Every AI output is explainable on request (what it's grounded on), calibrated (c
 - **Accessibility & i18n** — full English/Arabic bilingual support with real RTL layout (not machine-translated filler), dark/light theme, and a WCAG-AA-verified color system
 - **Explainability everywhere** — every AI-generated output (analysis, roadmap, feedback) can be explained on request: what data it used and why it reached its conclusion
 - **Supervised career-plan flow** (`POST /ai-career-center/career-plan/*`) — an alternative to the direct Skill-Gap Analysis endpoint that runs both agents through an explicit coordinator, pauses for a human approve/reject decision before the roadmap becomes real, and survives a backend restart mid-approval (see [Multi-agent overview](#multi-agent-overview))
+- **Role-based ecosystem** — Company and Service Provider personas with their own MVPs (job/internship postings + applicant review; service listings + discovery), connected back to the core career-intelligence system (see [Role-based ecosystem](#role-based-ecosystem))
+
+## Role-based ecosystem
+
+Orbit's PRD (`docs/01-Product/PRD.md`) always scoped Orbit as more than a single-persona tool: a self-serve **Company (Job-Posting)** persona (§16, tagged **Phase 2**) and a **Service Provider / Freelancer** persona backing a **Services Marketplace** (§16, tagged **Unscheduled** — "sequencing is an open question"). Both were product vision only until this phase — no role selection, no company/provider account type, no job or service entity existed anywhere in the schema. This phase implements both personas as real, working MVPs, pulled forward ahead of the PRD's original phase sequencing by explicit product direction, on top of the unchanged Phase 0 AI Career Center (Student/Graduate experience — Profile, Goal, Skill-Gap Analysis, Roadmap, CV Feedback, Progress, Notifications).
+
+### Role model
+
+`User.account_type` (`AccountType` enum: `student`, `graduate`, `company`, `service_provider`) is a **server-side, persisted** column — never a frontend-only flag. Every backend endpoint scoped to one persona is gated by `require_account_type(...)` (`backend/app/api/deps.py`), which reads the caller's own DB row via the same JWT-verified identity every other endpoint uses; a role claimed in a request body or header has no effect (verified directly — see [Testing](#testing)). A new user with no `account_type` yet sees a **"How will you use Orbit?"** role-selection screen (`frontend/app/role-selection/`) right after authentication; existing users default to `student` (a real, applied Alembic data backfill, not a runtime guess) so no prior account loses data or access.
+
+### Currently implemented
+
+| Persona | What's real today |
+|---|---|
+| **Student** | Unchanged — the full Phase 0 AI Career Center experience (see [Features](#features)), now explicitly reached via the role model rather than being the only path through the app. |
+| **Graduate** | Shares the identical backend with Student (same career-intelligence system, no duplicated logic) — a distinct account type for framing/analytics purposes, not a separate feature set. |
+| **Company** | Company profile (name, industry, description, website); create/edit job or internship postings (title, type, location, required skills, description); open/close a posting; view applicants per posting with a **safe candidate-readiness snapshot** (target role/field, top-line confidence, declared skills — never the applicant's raw Profile text or Skill-Gap Analysis reasoning); accept/reject/mark-reviewed an application. Ownership is enforced server-side: a company can only ever see or modify its own postings and applicants (404, not 403, for another company's data — no existence leak). Not yet implemented: candidate search/filtering across applicants (PRD §16's stated Company capability) — today a company only sees applicants who applied to one of its own postings. |
+| **Service Provider** | Provider profile (professional title, expertise, description, contact info); publish/edit service listings (title, category, description); activate/deactivate a listing; Student/Graduate-facing discovery (`GET /services`, browse active listings with the provider's public identity attached) and a keyword-matched "recommended for your skill gaps" view. Not yet implemented: the request/booking and review steps of PRD §16's full "publish, discover, request, and review" description, and no payment processing (explicitly out of scope per product direction — no payment infrastructure exists in this stack to integrate against). |
+| **Ecosystem connections** | Student/Graduate → Company: applying to a posting surfaces the safe readiness snapshot above, computed fresh from the applicant's own current Profile/Goal/Skill-Gap Analysis rows (`_candidate_readiness`, `backend/app/api/routers/opportunities.py`) — never a raw copy of private data. Student/Graduate → Service Provider: `GET /services/recommended` matches the caller's own current skill-gap names against active listings (plain keyword matching over the caller's own data only, not a cross-user query), surfaced as a "get support" section on the Skill-Gap Analysis page. |
+| **AI matching** | `GET /opportunities/{id}/explain-fit` reuses the existing Explainability capability (`careeros_ai.capabilities.explainability.explain_output` — the same mechanism already powering the Skill-Gap/Roadmap/CV-Feedback `/explain` endpoints, no new agent or AI subsystem) to explain, on request, how a candidate's own skills and known gaps relate to one specific opportunity's posted requirements. |
+
+### Product vision (not yet implemented)
+
+- Candidate search/filtering for companies (browsing all candidates, not only applicants) — PRD §16 scopes this for the Company persona; not built, since it would require a much larger public-candidate-directory privacy design than the per-application readiness snapshot above.
+- Service request/booking and post-service reviews (the "request, and review" half of PRD §16's Services Marketplace description) — only "publish" and "discover" are implemented.
+- Payments/billing for services or job postings — no payment processor exists anywhere in this stack (Settings' own Subscription view has the same honest gap, see [Known limitations](#known-limitations)).
+- Institutional Company/University relationships (PRD §16, tagged **Phase 4**) — a distinct, deeper persona from the self-serve Company MVP built here; out of scope.
+- AI-ranked/recommended candidate matching for companies (beyond the on-request, single-candidate `explain-fit` above) — would need its own grounding and fairness design, not built by extension of the existing single-user Explainability capability.
+
+### Security
+
+Every persona-scoped endpoint is gated server-side by `require_account_type(...)`; ownership (not just role) is checked independently on every company- or provider-scoped read/write. A dedicated test file, `backend/tests/test_role_authorization.py`, verifies the full cross-role matrix (every non-owning persona rejected from every gated action, parametrized), that a request with no role selected yet is blocked exactly like a mismatched role, that an unauthenticated request 401s before any role check runs, that a role can never be supplied via a request body field or header, and that switching a declared role mid-session immediately changes what's enforced (the check reads the DB fresh every request, never cached).
 
 ## AI architecture
 
@@ -187,7 +220,7 @@ flowchart TB
     end
 
     subgraph Interaction["Interaction Layer — backend/app"]
-        API["FastAPI routers\nauth · profiles · ai-career-center · dashboard · notifications · settings"]
+        API["FastAPI routers\nauth · profiles · ai-career-center · dashboard · notifications · settings\naccount · opportunities · services (role-based ecosystem)"]
         SVC["Services\n(onboarding completeness, cross-cutting rules)"]
     end
 
@@ -395,23 +428,23 @@ Tracked in detail, feature-by-feature, against the PRD in [`PHASE0-AUDIT.md`](PH
 ## Testing
 
 ```bash
-# Backend — 63 tests, hermetic (SQLite in-memory, fake AI/supervisor/rate-limiter, no live Postgres/Redis/Groq needed)
+# Backend — 117 tests, hermetic (SQLite in-memory, fake AI/supervisor/rate-limiter, no live Postgres/Redis/Groq needed)
 cd backend && pytest tests/
 
-# ai package — 5 tests, pure logic, no API key needed
+# ai package — 16 tests, pure logic + real LangGraph graphs against scripted fakes, no API key needed
 cd ai && pytest tests/
 
 # Real end-to-end verification against live Postgres + live Groq
 cd backend && python -m scripts.verify_e2e   # or: make verify-e2e
 ```
 
-68/68 hermetic tests passing as of the last full run (runs in ~7s — every external call, including the new CareerSupervisor and rate limiter, is faked the same way the LLM agents always have been). The end-to-end script additionally walks the complete real product flow (profile → goal → analysis → roadmap → CV feedback → notifications → settings) against a live database and live Groq calls, with results independently confirmed via direct `psql` queries. The ReAct tool-calling loop and the CareerSupervisor's human-in-the-loop flow (including a resume from a different process than the one that started it) were additionally verified live against production Neon Postgres + Groq during this phase.
+133/133 hermetic tests passing as of the last full run (backend ~6s, ai ~0.4s — every external call, including the new CareerSupervisor and rate limiter, is faked the same way the LLM agents always have been). This includes the role-based ecosystem's own coverage: account-type persistence, company/service-provider profile CRUD, job-opportunity and service-listing ownership isolation (a company/provider can never read or modify another's data), the candidate-readiness snapshot's field-level privacy boundary, and a dedicated cross-role authorization matrix (`backend/tests/test_role_authorization.py`) — see [Role-based ecosystem](#role-based-ecosystem). The end-to-end script additionally walks the complete real product flow (profile → goal → analysis → roadmap → CV feedback → notifications → settings) against a live database and live Groq calls, with results independently confirmed via direct `psql` queries. The ReAct tool-calling loop and the CareerSupervisor's human-in-the-loop flow (including a resume from a different process than the one that started it) were additionally verified live against production Neon Postgres + Groq during an earlier phase.
 
 ## Documentation
 
 - [Product Requirements Document](docs/01-Product/PRD.md) — what CareerOS is and why every decision exists
 - [Solution Architecture Specification](docs/02-Solution-Architecture/SAS.md) — the structural shape: layers, boundaries, contracts
-- [`PHASE0-AUDIT.md`](PHASE0-AUDIT.md) — the feature-by-feature completion matrix, checked against actual code
+- [`PHASE0-AUDIT.md`](PHASE0-AUDIT.md) — the feature-by-feature completion matrix, checked against actual code (scoped to the Phase 0 AI Career Center; the role-based ecosystem's own implemented-vs-vision breakdown lives in [Role-based ecosystem](#role-based-ecosystem) above and `CHANGELOG.md`, not this file)
 - [`CHANGELOG.md`](CHANGELOG.md) — session-by-session implementation history
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — repository governance and contribution rules
 
