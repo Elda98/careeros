@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { AlertCircle, MapPin } from "lucide-react";
 import { useState } from "react";
 
+import { ExplainButton } from "@/components/explain-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -96,6 +97,7 @@ export function OpportunitiesView({
                 >
                   {alreadyApplied ? t("opportunities.alreadyApplied") : t("opportunities.apply")}
                 </Button>
+                <ExplainButton endpoint={`/opportunities/${opportunity.id}/explain-fit`} />
               </CardContent>
             </Card>
           );

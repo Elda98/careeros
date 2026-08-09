@@ -22,8 +22,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_current_user, get_db, require_account_type
+from app.api.deps import get_current_user, get_db, get_explainability_llm, require_account_type
+from app.core.security import PromptInjectionDetected, sanitize_free_text, sanitize_skill_list
 from app.db.models import AccountType, Application, Goal, JobOpportunity, OpportunityStatus, Profile, SkillGapAnalysis, User
+from app.schemas.ai_career_center import ExplanationRead
 from app.schemas.ecosystem import (
     ApplicationRead,
     ApplicationStatusUpdate,
@@ -33,6 +35,8 @@ from app.schemas.ecosystem import (
     JobOpportunityWithCompanyRead,
     MyApplicationRead,
 )
+
+from careeros_ai.capabilities.explainability import explain_output
 
 router = APIRouter(tags=["opportunities"])
 
@@ -65,6 +69,26 @@ async def _owned_opportunity(
 company_router = APIRouter(prefix="/company/opportunities", tags=["company"])
 
 
+def _sanitize_opportunity_fields(data: dict) -> dict:
+    """Same guardrail applied to Profile/Goal free text (app/api/routers/
+    profiles.py) — now load-bearing here too, not just defense in depth:
+    `explain_opportunity_fit` below interpolates title/description/
+    required_skills directly into an LLM prompt for a *different* user (the
+    applicant), so an unsanitized company posting is a real prompt-injection
+    vector against that applicant's explanation request."""
+    try:
+        for field in ("title", "description"):
+            if data.get(field):
+                data[field] = sanitize_free_text(data[field], field_name=field)
+        if data.get("required_skills"):
+            data["required_skills"] = sanitize_skill_list(data["required_skills"], field_name="required_skills")
+    except PromptInjectionDetected as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    return data
+
+
 @company_router.post("", response_model=JobOpportunityRead, status_code=status.HTTP_201_CREATED)
 async def create_opportunity(
     body: JobOpportunityCreate,
@@ -75,7 +99,9 @@ async def create_opportunity(
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Complete your company profile before posting an opportunity."
         )
-    opportunity = JobOpportunity(company_profile_id=user.company_profile.id, **body.model_dump())
+    opportunity = JobOpportunity(
+        company_profile_id=user.company_profile.id, **_sanitize_opportunity_fields(body.model_dump())
+    )
     db.add(opportunity)
     await db.commit()
     await db.refresh(opportunity)
@@ -105,7 +131,7 @@ async def update_opportunity(
     db: AsyncSession = Depends(get_db),
 ) -> JobOpportunity:
     opportunity = await _owned_opportunity(db, user, opportunity_id)
-    for field, value in body.model_dump(exclude_unset=True).items():
+    for field, value in _sanitize_opportunity_fields(body.model_dump(exclude_unset=True)).items():
         setattr(opportunity, field, value)
     db.add(opportunity)
     await db.commit()
@@ -223,6 +249,71 @@ async def browse_opportunities(
         {**JobOpportunityRead.model_validate(o).model_dump(), "company_name": o.company_profile.company_name}
         for o in opportunities
     ]
+
+
+@router.get("/opportunities/{opportunity_id}/explain-fit", response_model=ExplanationRead)
+async def explain_opportunity_fit(
+    opportunity_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    llm=Depends(get_explainability_llm),
+) -> ExplanationRead:
+    """Milestone 6 (Phase 8, "matching candidate skills to job
+    opportunities"): reuses the exact same on-request Explainability
+    capability as the AI Career Center's other /explain endpoints
+    (careeros_ai.capabilities.explainability.explain_output) — no new
+    agent, no new AI subsystem. Grounded only in the caller's own Profile
+    and Skill-Gap Analysis plus the opportunity's own posted requirements
+    — never another candidate's data, and never the company's private
+    application/candidate data either."""
+    result = await db.execute(
+        select(JobOpportunity).where(JobOpportunity.id == opportunity_id).options(_OPPORTUNITY_LOAD)
+    )
+    opportunity = result.scalar_one_or_none()
+    if opportunity is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Opportunity not found")
+
+    profile_result = await db.execute(select(Profile).where(Profile.user_id == user.id))
+    profile = profile_result.scalar_one_or_none()
+
+    analysis_result = await db.execute(
+        select(SkillGapAnalysis)
+        .options(selectinload(SkillGapAnalysis.gaps))
+        .where(SkillGapAnalysis.user_id == user.id)
+        .order_by(SkillGapAnalysis.version.desc())
+        .limit(1)
+    )
+    analysis = analysis_result.scalar_one_or_none()
+
+    grounded_on = ["profile.skills", "opportunity.required_skills"]
+    context_lines = [
+        f"Candidate's current skills: {profile.skills if profile else []}",
+        f"Opportunity: {opportunity.title} at {opportunity.company_profile.company_name}",
+        f"Required skills: {opportunity.required_skills}",
+    ]
+    if analysis is not None:
+        grounded_on.append("skill_gap_analysis.current")
+        context_lines.append(f"Candidate's current skill-gap analysis summary: {analysis.summary}")
+        context_lines.append(
+            "Known skill gaps: " + "; ".join(f"{g.skill}: {g.description}" for g in analysis.gaps)
+        )
+    grounded_context = "\n".join(context_lines)
+
+    try:
+        explanation = explain_output(
+            llm,
+            output_summary=(
+                f"Opportunity: {opportunity.title} "
+                f"(requires: {', '.join(opportunity.required_skills) or 'unspecified skills'})"
+            ),
+            grounded_on=grounded_on,
+            grounded_context=grounded_context,
+            question_scope="how well the candidate's current skills and known gaps match this opportunity's requirements",
+        )
+    except Exception as exc:  # any LLM failure is an honest generation failure (BR-AI-5)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Explanation generation failed: {exc}") from exc
+
+    return ExplanationRead(explanation=explanation, grounded_on=grounded_on)
 
 
 @router.post("/opportunities/{opportunity_id}/apply", response_model=MyApplicationRead, status_code=status.HTTP_201_CREATED)
