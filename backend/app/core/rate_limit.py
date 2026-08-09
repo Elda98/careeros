@@ -93,3 +93,4 @@ def rate_limiter(bucket: str):
 skill_gap_refresh_limiter = rate_limiter("skill-gap-analysis-refresh")
 career_plan_start_limiter = rate_limiter("career-plan-start")
 cv_feedback_submit_limiter = rate_limiter("cv-feedback-submit")
+interview_turn_limiter = rate_limiter("interview-turn")

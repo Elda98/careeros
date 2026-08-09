@@ -6,6 +6,7 @@ from app.api.routers import (
     ai_career_center,
     dashboard,
     health,
+    interview,
     notifications,
     opportunities,
     profiles,
@@ -44,6 +45,7 @@ app.include_router(opportunities.router)
 app.include_router(services.router)
 app.include_router(profiles.router)
 app.include_router(ai_career_center.router)
+app.include_router(interview.router)
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
 app.include_router(settings.router)

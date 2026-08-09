@@ -147,5 +147,114 @@ class CVFeedbackOutput(BaseModel):
     generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+# --- Interview Preparation (owned by the Interview Coach Agent) ------------
+
+
+class InterviewExperienceLevel(str, Enum):
+    ENTRY = "entry"
+    MID = "mid"
+    SENIOR = "senior"
+
+
+class InterviewType(str, Enum):
+    BEHAVIORAL = "behavioral"
+    TECHNICAL = "technical"
+    MIXED = "mixed"
+    SCREENING = "screening"
+
+
+class InterviewQuestionCategory(str, Enum):
+    """FR-INTV-2's named question types, plus `follow_up` — a follow-up is
+    itself always a reaction to one specific prior category, but is tracked
+    separately so the turn graph can bound "at most one follow-up per main
+    question" without inspecting question text."""
+
+    INTRO = "intro"
+    BEHAVIORAL = "behavioral"
+    TECHNICAL = "technical"
+    ROLE_SPECIFIC = "role_specific"
+    RESUME_BASED = "resume_based"
+    FOLLOW_UP = "follow_up"
+
+
+class InterviewConfig(BaseModel):
+    target_role: str
+    target_field: str = ""
+    experience_level: InterviewExperienceLevel
+    interview_type: InterviewType
+    target_company: str = ""
+
+
+class AnswerFeedback(BaseModel):
+    """Per-answer grading — the basis for both the live "why this score"
+    explanation and the final report's aggregate scores. Scores are 0-100,
+    not a vaguer bucket, since a single interview answer is specific enough
+    to grade at that resolution (unlike Skill-Gap Analysis's severity,
+    which stays a 3-level enum because a *gap* is inherently fuzzier)."""
+
+    quality_score: int = Field(ge=0, le=100)
+    clarity_score: int = Field(ge=0, le=100)
+    relevance_score: int = Field(ge=0, le=100)
+    structure_score: int = Field(ge=0, le=100)
+    feedback_note: str
+    example_improved_answer: str
+    warrants_follow_up: bool
+    follow_up_reason: str = ""
+
+
+class InterviewExchange(BaseModel):
+    """One already-completed question+answer pair, optionally with its
+    already-computed feedback — the turn graph's running history, and the
+    report graph's full transcript."""
+
+    category: InterviewQuestionCategory
+    question: str
+    answer: str
+    feedback: AnswerFeedback | None = None
+
+
+class InterviewTurnInput(BaseModel):
+    profile: ProfileSnapshot
+    goal: GoalSnapshot
+    cv_text: str = ""
+    config: InterviewConfig
+    history: list[InterviewExchange] = Field(default_factory=list)
+    pending_question: str = ""
+    pending_question_category: InterviewQuestionCategory | None = None
+    pending_answer: str = ""
+
+
+class InterviewTurnOutput(BaseModel):
+    answer_feedback: AnswerFeedback | None = None
+    action: Literal["follow_up", "next_question", "conclude"]
+    next_question: str = ""
+    next_question_category: InterviewQuestionCategory | None = None
+    grounded_on: list[str] = Field(default_factory=list)
+
+
+class InterviewReportInput(BaseModel):
+    profile: ProfileSnapshot
+    goal: GoalSnapshot
+    config: InterviewConfig
+    history: list[InterviewExchange]
+
+
+class InterviewReportOutput(BaseModel):
+    overall_score: int = Field(ge=0, le=100)
+    summary: str
+    answer_quality: int = Field(ge=0, le=100)
+    communication: int = Field(ge=0, le=100)
+    structure: int = Field(ge=0, le=100)
+    technical_readiness: int = Field(ge=0, le=100)
+    strengths: list[str]
+    areas_to_improve: list[str]
+    recommended_practice: list[str]
+    next_interview_recommendation: str
+    confidence: ConfidenceLevel
+    confidence_reason: str = ""
+    grounded_on: list[str] = Field(default_factory=list)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 SkillGapAnalysisInput.model_rebuild()
 RoadmapInput.model_rebuild()

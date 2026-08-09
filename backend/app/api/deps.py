@@ -15,6 +15,7 @@ from app.db.models import AccountType, User
 from app.db.session import get_db
 
 from careeros_ai.agents.cv_feedback import CVFeedbackAgent
+from careeros_ai.agents.interview import InterviewCoachAgent
 from careeros_ai.agents.roadmap import RoadmapAgent
 from careeros_ai.agents.skill_gap_analysis import SkillGapAnalysisAgent
 from careeros_ai.llm import default_llm
@@ -31,6 +32,7 @@ __all__ = [
     "get_cv_feedback_agent",
     "get_db",
     "get_explainability_llm",
+    "get_interview_coach_agent",
     "get_roadmap_agent",
     "get_skill_gap_analysis_agent",
     "require_account_type",
@@ -105,6 +107,15 @@ def get_roadmap_agent() -> RoadmapAgent:
 
 def get_cv_feedback_agent() -> CVFeedbackAgent:
     return _cv_feedback_agent()
+
+
+@lru_cache
+def _interview_coach_agent() -> InterviewCoachAgent:
+    return InterviewCoachAgent()
+
+
+def get_interview_coach_agent() -> InterviewCoachAgent:
+    return _interview_coach_agent()
 
 
 @lru_cache

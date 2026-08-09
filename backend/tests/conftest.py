@@ -22,10 +22,16 @@ from app.api.deps import (
     get_cv_feedback_agent,
     get_db,
     get_explainability_llm,
+    get_interview_coach_agent,
     get_roadmap_agent,
     get_skill_gap_analysis_agent,
 )
-from app.core.rate_limit import career_plan_start_limiter, cv_feedback_submit_limiter, skill_gap_refresh_limiter
+from app.core.rate_limit import (
+    career_plan_start_limiter,
+    cv_feedback_submit_limiter,
+    interview_turn_limiter,
+    skill_gap_refresh_limiter,
+)
 from app.db import models  # noqa: F401 — import registers every table on Base.metadata
 from app.db.base import Base
 from app.main import app
@@ -34,6 +40,7 @@ from tests.fake_agents import (
     FakeClerkAdminClient,
     FakeCVFeedbackAgent,
     FakeExplainabilityLLM,
+    FakeInterviewCoachAgent,
     FakeRoadmapAgent,
     FakeSkillGapAnalysisAgent,
 )
@@ -65,6 +72,7 @@ def client(session_maker: async_sessionmaker[AsyncSession]) -> Iterator[TestClie
     app.dependency_overrides[get_skill_gap_analysis_agent] = lambda: FakeSkillGapAnalysisAgent()
     app.dependency_overrides[get_roadmap_agent] = lambda: FakeRoadmapAgent()
     app.dependency_overrides[get_cv_feedback_agent] = lambda: FakeCVFeedbackAgent()
+    app.dependency_overrides[get_interview_coach_agent] = lambda: FakeInterviewCoachAgent()
     app.dependency_overrides[get_explainability_llm] = lambda: FakeExplainabilityLLM()
     app.dependency_overrides[get_clerk_admin_client] = lambda: FakeClerkAdminClient()
     # One instance reused across every request in a test — its in-memory
@@ -80,6 +88,7 @@ def client(session_maker: async_sessionmaker[AsyncSession]) -> Iterator[TestClie
     app.dependency_overrides[skill_gap_refresh_limiter] = lambda: None
     app.dependency_overrides[career_plan_start_limiter] = lambda: None
     app.dependency_overrides[cv_feedback_submit_limiter] = lambda: None
+    app.dependency_overrides[interview_turn_limiter] = lambda: None
 
     with TestClient(app) as test_client:
         yield test_client

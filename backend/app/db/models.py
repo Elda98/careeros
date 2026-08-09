@@ -466,3 +466,109 @@ class CVFeedbackItem(Base):
     relevance_to_goal: Mapped[str] = mapped_column(Text, default="")
 
     round: Mapped[CVFeedbackRound] = relationship(back_populates="items")
+
+
+class InterviewExperienceLevel(str, enum.Enum):
+    ENTRY = "entry"
+    MID = "mid"
+    SENIOR = "senior"
+
+
+class InterviewType(str, enum.Enum):
+    BEHAVIORAL = "behavioral"
+    TECHNICAL = "technical"
+    MIXED = "mixed"
+    SCREENING = "screening"
+
+
+class InterviewQuestionCategory(str, enum.Enum):
+    INTRO = "intro"
+    BEHAVIORAL = "behavioral"
+    TECHNICAL = "technical"
+    ROLE_SPECIFIC = "role_specific"
+    RESUME_BASED = "resume_based"
+    FOLLOW_UP = "follow_up"
+
+
+class InterviewSessionStatus(str, enum.Enum):
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+
+
+class InterviewSession(Base):
+    """Owned exclusively by the Interview Coach Agent (`ai/careeros_ai/
+    agents/interview.py`) — questions/answers/feedback/report content only;
+    queried directly by user_id like SkillGapAnalysis/Roadmap/
+    CVFeedbackRound, not via a `User.interview_sessions` back-reference
+    (this codebase's established pattern for entities beyond the
+    account/profile tier — see app/api/deps.py's `_USER_LOAD_OPTIONS`)."""
+
+    __tablename__ = "interview_sessions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = _uuid_fk("users.id", nullable=False, index=True)
+    target_role: Mapped[str] = mapped_column(String, nullable=False)
+    target_field: Mapped[str] = mapped_column(String, default="")
+    experience_level: Mapped[InterviewExperienceLevel] = mapped_column(
+        Enum(InterviewExperienceLevel), nullable=False
+    )
+    interview_type: Mapped[InterviewType] = mapped_column(Enum(InterviewType), nullable=False)
+    target_company: Mapped[str] = mapped_column(String, default="")
+    status: Mapped[InterviewSessionStatus] = mapped_column(
+        Enum(InterviewSessionStatus), default=InterviewSessionStatus.IN_PROGRESS
+    )
+
+    # Report fields — populated only once status becomes COMPLETED.
+    overall_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    answer_quality: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    communication: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    structure_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    technical_readiness: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    strengths: Mapped[list[str]] = mapped_column(JSON, default=list)
+    areas_to_improve: Mapped[list[str]] = mapped_column(JSON, default=list)
+    recommended_practice: Mapped[list[str]] = mapped_column(JSON, default=list)
+    next_interview_recommendation: Mapped[str] = mapped_column(Text, default="")
+    report_confidence: Mapped[ConfidenceLevel | None] = mapped_column(Enum(ConfidenceLevel), nullable=True)
+    report_confidence_reason: Mapped[str] = mapped_column(Text, default="")
+    report_grounded_on: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    questions: Mapped[list[InterviewQuestion]] = relationship(
+        back_populates="session", cascade="all, delete-orphan", order_by="InterviewQuestion.order_index"
+    )
+
+
+class InterviewQuestion(Base):
+    __tablename__ = "interview_questions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    session_id: Mapped[uuid.UUID] = _uuid_fk("interview_sessions.id", nullable=False, index=True)
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    category: Mapped[InterviewQuestionCategory] = mapped_column(Enum(InterviewQuestionCategory), nullable=False)
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    session: Mapped[InterviewSession] = relationship(back_populates="questions")
+    answer: Mapped[InterviewAnswer | None] = relationship(
+        back_populates="question", uselist=False, cascade="all, delete-orphan"
+    )
+
+
+class InterviewAnswer(Base):
+    __tablename__ = "interview_answers"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    question_id: Mapped[uuid.UUID] = _uuid_fk("interview_questions.id", nullable=False, unique=True)
+    answer_text: Mapped[str] = mapped_column(Text, nullable=False)
+    quality_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    clarity_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    relevance_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    structure_score: Mapped[int] = mapped_column(Integer, nullable=False)
+    feedback_note: Mapped[str] = mapped_column(Text, default="")
+    example_improved_answer: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    question: Mapped[InterviewQuestion] = relationship(back_populates="answer")
