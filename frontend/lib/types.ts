@@ -291,3 +291,88 @@ export interface DataOverviewRead {
   notifications_count: number;
   subscription_tier: SubscriptionTier | null;
 }
+
+export type InterviewExperienceLevel = "entry" | "mid" | "senior";
+export type InterviewType = "behavioral" | "technical" | "mixed" | "screening";
+export type InterviewQuestionCategory =
+  | "intro"
+  | "behavioral"
+  | "technical"
+  | "role_specific"
+  | "resume_based"
+  | "follow_up";
+export type InterviewSessionStatus = "in_progress" | "completed";
+
+export interface InterviewSessionCreate {
+  target_role: string;
+  target_field?: string;
+  experience_level: InterviewExperienceLevel;
+  interview_type: InterviewType;
+  target_company?: string;
+}
+
+export interface InterviewAnswerRead {
+  id: string;
+  answer_text: string;
+  quality_score: number;
+  clarity_score: number;
+  relevance_score: number;
+  structure_score: number;
+  feedback_note: string;
+  example_improved_answer: string;
+  created_at: string;
+}
+
+export interface InterviewQuestionRead {
+  id: string;
+  order_index: number;
+  category: InterviewQuestionCategory;
+  question_text: string;
+  created_at: string;
+  answer: InterviewAnswerRead | null;
+}
+
+export interface InterviewSessionRead {
+  id: string;
+  target_role: string;
+  target_field: string;
+  experience_level: InterviewExperienceLevel;
+  interview_type: InterviewType;
+  target_company: string;
+  status: InterviewSessionStatus;
+  created_at: string;
+}
+
+export interface InterviewSessionDetailRead extends InterviewSessionRead {
+  questions: InterviewQuestionRead[];
+}
+
+export interface InterviewAnswerSubmit {
+  question_id: string;
+  answer_text: string;
+}
+
+export interface InterviewTurnRead {
+  answer_feedback: InterviewAnswerRead | null;
+  action: "follow_up" | "next_question" | "conclude";
+  next_question: InterviewQuestionRead | null;
+}
+
+export interface InterviewSessionReportRead {
+  id: string;
+  status: InterviewSessionStatus;
+  overall_score: number;
+  summary: string;
+  answer_quality: number;
+  communication: number;
+  structure_score: number;
+  technical_readiness: number;
+  strengths: string[];
+  areas_to_improve: string[];
+  recommended_practice: string[];
+  next_interview_recommendation: string;
+  confidence: ConfidenceLevel;
+  confidence_reason: string;
+  grounded_on: string[];
+  completed_at: string | null;
+}

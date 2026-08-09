@@ -42,6 +42,7 @@
     "dashboard": "لوحة التحكم",
     "skillGapAnalysis": "تحليل الفجوة المهارية",
     "roadmap": "خارطة الطريق",
+    "interview": "التدريب على المقابلات",
     "opportunities": "الفرص",
     "services": "الخدمات",
     "cvFeedback": "تقييم السيرة الذاتية",
@@ -608,5 +609,69 @@
     "browseSubtitle": "خدمات مهنية يقدمها أشخاص على Orbit — تدريس، توجيه، مراجعة، وأكثر.",
     "noActiveServices": "لا توجد خدمات نشطة حاليًا — تحقق مرة أخرى قريبًا.",
     "contact": "التواصل"
+  },
+  "interview": {
+    "eyebrow": "التدريب على المقابلات",
+    "title": "تدرّب قبل أن يهم الأمر",
+    "subtitle": "مقابلة تجريبية مخصصة لوظيفتك المستهدفة ومستواك وسيرتك الذاتية — مع تقرير مُقيَّم وقابل للتفسير في النهاية.",
+    "form": {
+      "heading": "ابدأ مقابلة تجريبية جديدة",
+      "targetRoleLabel": "الوظيفة المستهدفة",
+      "targetRolePlaceholder": "مثال: مهندس أنظمة خلفية",
+      "experienceLevelLabel": "مستوى الخبرة",
+      "levelEntry": "مبتدئ",
+      "levelMid": "متوسط",
+      "levelSenior": "متقدم",
+      "interviewTypeLabel": "نوع المقابلة",
+      "typeMixed": "متنوعة",
+      "typeBehavioral": "سلوكية",
+      "typeTechnical": "تقنية",
+      "typeScreening": "فرز أولي",
+      "targetFieldLabel": "المجال (اختياري)",
+      "targetFieldPlaceholder": "مثال: التقنية المالية",
+      "targetCompanyLabel": "الشركة (اختياري)",
+      "targetCompanyPlaceholder": "مثال: Acme Robotics",
+      "submit": "بدء المقابلة"
+    },
+    "startError": "تعذّر بدء هذه المقابلة",
+    "answerError": "تعذّر إرسال إجابتك",
+    "finishError": "تعذّر إنشاء تقريرك",
+    "loadError": "تعذّر تحميل جلسة المقابلة هذه",
+    "pastSessions": "الجلسات السابقة",
+    "statusInProgress": "قيد التقدم",
+    "statusCompleted": "مكتملة",
+    "backToList": "العودة إلى التدريب على المقابلات",
+    "yourAnswer": "إجابتك",
+    "answerPlaceholder": "اكتب إجابتك كما لو كنت تقولها بصوت عالٍ...",
+    "submitAnswer": "إرسال الإجابة",
+    "exampleAnswer": "نسخة أقوى من هذه الإجابة",
+    "readyToFinish": "هذا هو السؤال الأخير — هل أنت جاهز لتقريرك؟",
+    "getReport": "احصل على تقريري",
+    "category": {
+      "intro": "تعريفي",
+      "behavioral": "سلوكي",
+      "technical": "تقني",
+      "roleSpecific": "خاص بالوظيفة",
+      "resumeBased": "مبني على السيرة الذاتية",
+      "followUp": "سؤال متابعة"
+    },
+    "scores": {
+      "quality": "الجودة",
+      "clarity": "الوضوح",
+      "relevance": "الارتباط",
+      "structure": "التنظيم"
+    },
+    "report": {
+      "eyebrow": "تقرير مقابلتك",
+      "overallScore": "التقييم العام",
+      "answerQuality": "جودة الإجابات",
+      "communication": "التواصل",
+      "structure": "التنظيم",
+      "technicalReadiness": "الجاهزية التقنية",
+      "strengths": "نقاط القوة",
+      "areasToImprove": "نقاط تحتاج تحسين",
+      "recommendedPractice": "تدريب موصى به",
+      "nextInterview": "لمقابلتك القادمة"
+    }
   }
 }

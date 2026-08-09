@@ -9,6 +9,7 @@ import {
   Settings,
   Briefcase,
   HandHeart,
+  Mic,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { href: "/skill-gap-analysis", labelKey: "nav.skillGapAnalysis", icon: Target },
   { href: "/roadmap", labelKey: "nav.roadmap", icon: Route },
+  { href: "/interview", labelKey: "nav.interview", icon: Mic },
   { href: "/opportunities", labelKey: "nav.opportunities", icon: Briefcase },
   { href: "/services", labelKey: "nav.services", icon: HandHeart },
   { href: "/cv-feedback", labelKey: "nav.cvFeedback", icon: FileText },

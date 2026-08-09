@@ -42,6 +42,7 @@
     "dashboard": "Dashboard",
     "skillGapAnalysis": "Skill-Gap Analysis",
     "roadmap": "Roadmap",
+    "interview": "Interview Prep",
     "opportunities": "Opportunities",
     "services": "Services",
     "cvFeedback": "CV Feedback",
@@ -608,5 +609,69 @@
     "browseSubtitle": "Professional services offered by people on Orbit — tutoring, coaching, reviews, and more.",
     "noActiveServices": "No active services right now — check back soon.",
     "contact": "Contact"
+  },
+  "interview": {
+    "eyebrow": "Interview Preparation",
+    "title": "Practice before it counts",
+    "subtitle": "A mock interview tailored to your target role, level, and CV — with a graded, explainable report at the end.",
+    "form": {
+      "heading": "Start a new mock interview",
+      "targetRoleLabel": "Target role",
+      "targetRolePlaceholder": "e.g. Backend Engineer",
+      "experienceLevelLabel": "Experience level",
+      "levelEntry": "Entry-level",
+      "levelMid": "Mid-level",
+      "levelSenior": "Senior",
+      "interviewTypeLabel": "Interview type",
+      "typeMixed": "Mixed",
+      "typeBehavioral": "Behavioral",
+      "typeTechnical": "Technical",
+      "typeScreening": "Screening",
+      "targetFieldLabel": "Field (optional)",
+      "targetFieldPlaceholder": "e.g. Fintech",
+      "targetCompanyLabel": "Company (optional)",
+      "targetCompanyPlaceholder": "e.g. Acme Robotics",
+      "submit": "Start interview"
+    },
+    "startError": "Couldn't start this interview",
+    "answerError": "Couldn't submit your answer",
+    "finishError": "Couldn't generate your report",
+    "loadError": "Couldn't load this interview session",
+    "pastSessions": "Past sessions",
+    "statusInProgress": "In progress",
+    "statusCompleted": "Completed",
+    "backToList": "Back to Interview Prep",
+    "yourAnswer": "Your answer",
+    "answerPlaceholder": "Type your answer as you would say it out loud...",
+    "submitAnswer": "Submit answer",
+    "exampleAnswer": "A stronger version of this answer",
+    "readyToFinish": "That's the last question — ready for your report?",
+    "getReport": "Get my report",
+    "category": {
+      "intro": "Introductory",
+      "behavioral": "Behavioral",
+      "technical": "Technical",
+      "roleSpecific": "Role-specific",
+      "resumeBased": "CV-based",
+      "followUp": "Follow-up"
+    },
+    "scores": {
+      "quality": "Quality",
+      "clarity": "Clarity",
+      "relevance": "Relevance",
+      "structure": "Structure"
+    },
+    "report": {
+      "eyebrow": "Your interview report",
+      "overallScore": "Overall score",
+      "answerQuality": "Answer quality",
+      "communication": "Communication",
+      "structure": "Structure",
+      "technicalReadiness": "Technical readiness",
+      "strengths": "Strengths",
+      "areasToImprove": "Areas to improve",
+      "recommendedPractice": "Recommended practice",
+      "nextInterview": "For your next interview"
+    }
   }
 }
