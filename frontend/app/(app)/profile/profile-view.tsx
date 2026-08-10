@@ -352,7 +352,7 @@ export function ProfileView({
                 className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-xs"
               >
                 <div>
-                  <p className="font-medium text-foreground">
+                  <p className="font-medium text-foreground" dir="auto">
                     {goal.target_role}
                     {goal.target_field && <span className="text-small text-muted-foreground"> — {goal.target_field}</span>}
                   </p>
@@ -401,7 +401,7 @@ function CareerSummaryCard({ profile, goals }: { profile: ProfileRead; goals: Go
           <div>
             <p className="text-caption font-medium text-muted-foreground">{t("profile.summary.goalLabel")}</p>
             {activeGoal ? (
-              <p className="text-title text-foreground">
+              <p className="text-title text-foreground" dir="auto">
                 {activeGoal.target_role}
                 {activeGoal.target_field && <span className="text-muted-foreground"> — {activeGoal.target_field}</span>}
               </p>

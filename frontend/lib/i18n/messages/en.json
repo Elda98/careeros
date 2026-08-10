@@ -162,7 +162,7 @@
   },
   "dashboard": {
     "greeting": "Welcome back",
-    "greetingWithGoal": "Your goal: {{role}}",
+    "careerGoalLabel": "Career goal",
     "noGoalYet": "Set a career goal to get a personalized analysis, roadmap, and readiness score.",
     "recommendedNext": "Recommended next",
     "topGaps": "Top skill gaps",
@@ -617,7 +617,7 @@
     "applyError": "Couldn't submit your application",
     "myApplications": "Your applications",
     "noApplicationsYet": "You haven't applied to anything yet.",
-    "candidateTargetRole": "Targeting: {{role}}"
+    "candidateTargetRoleLabel": "Targeting:"
   },
   "providerServices": {
     "postNew": "Add a service",
@@ -738,6 +738,11 @@
     "owner": "Owner",
     "edit": "Edit",
     "moderateDelete": "Remove",
+    "searchPlaceholder": "Search communities",
+    "noSearchResults": "No communities match \"{{query}}\"",
+    "emptyStateTitle": "No communities yet",
+    "emptyStateCreatorHint": "Start the first one — pick a category and give it a name.",
+    "emptyStateMemberHint": "Companies and service providers on Orbit can start official communities — check back soon.",
     "memberCount": "{{count}} members",
     "postCount": "{{count}} posts",
     "join": "Join",

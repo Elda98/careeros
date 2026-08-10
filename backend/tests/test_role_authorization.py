@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.api.deps import get_current_user_id
+from app.db.models import AccountType, User
 from app.main import app
 from tests.conftest import TEST_CLERK_USER_ID
 
@@ -109,13 +112,26 @@ def test_account_type_cannot_be_spoofed_via_a_request_header(client: TestClient)
     assert response.status_code == 403
 
 
-def test_switching_declared_role_immediately_changes_enforcement(client: TestClient) -> None:
+async def test_switching_declared_role_immediately_changes_enforcement(
+    client: TestClient, session_maker: async_sessionmaker[AsyncSession]
+) -> None:
     """The role check reads the DB fresh on every request — proving
     enforcement is live, not cached from account creation or a prior
-    request in the session."""
+    request in the session.
+
+    `PUT /account/type` itself now rejects changing an already-set role
+    (see test_account.py's test_account_type_cannot_be_changed_once_set),
+    so this test switches the row directly to isolate what it's actually
+    proving: that a role change is picked up immediately, regardless of
+    how it happened."""
     client.put("/account/type", json={"account_type": "student"})
     assert client.post("/company/opportunities", json={"title": "Backend Intern"}).status_code == 403
 
-    client.put("/account/type", json={"account_type": "company"})
+    async with session_maker() as session:
+        user = (await session.execute(select(User).where(User.clerk_user_id == TEST_CLERK_USER_ID))).scalar_one()
+        user.account_type = AccountType.COMPANY
+        session.add(user)
+        await session.commit()
+
     client.patch("/account/company-profile", json={"company_name": "Acme Robotics"})
     assert client.post("/company/opportunities", json={"title": "Backend Intern"}).status_code == 201

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -13,6 +14,14 @@ class AccountTypeRead(BaseModel):
 
 class AccountTypeUpdate(BaseModel):
     account_type: AccountType
+
+
+class LocaleRead(BaseModel):
+    locale: Literal["en", "ar"]
+
+
+class LocaleUpdate(BaseModel):
+    locale: Literal["en", "ar"]
 
 
 class CompanyProfileUpdate(BaseModel):

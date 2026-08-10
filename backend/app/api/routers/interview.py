@@ -299,6 +299,7 @@ async def create_session(
         goal=_goal_snapshot(user, session),
         cv_text=cv_text,
         config=_config_from_session(session),
+        locale=user.locale,
     )
     try:
         turn_output = agent.run_turn(turn_input)
@@ -371,6 +372,7 @@ async def _record_answer_and_get_next(
         goal=_goal_snapshot(user, session),
         cv_text=cv_text,
         config=_config_from_session(session),
+        locale=user.locale,
         history=_history_from_session(session),
         pending_question=question.question_text,
         pending_question_category=question.category,
@@ -518,6 +520,7 @@ async def finish_session(
         profile=_profile_snapshot(user),
         goal=_goal_snapshot(user, session),
         config=_config_from_session(session),
+        locale=user.locale,
         history=history,
     )
     try:
@@ -545,7 +548,7 @@ async def finish_session(
     # BR-NOTIF-1(a): a requested interview report completes.
     notify(
         db, user, category="interview_report_complete",
-        message=f"Your interview report for {session.target_role} is ready.",
+        message_key="interview_report_complete", target_role=session.target_role,
     )
 
     # Computed now, before the commit below expires session.questions —

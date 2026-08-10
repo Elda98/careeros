@@ -53,6 +53,14 @@ export interface AccountTypeRead {
   account_type: AccountType | null;
 }
 
+export interface LocaleRead {
+  locale: "en" | "ar";
+}
+
+export interface LocaleUpdate {
+  locale: "en" | "ar";
+}
+
 export interface CompanyProfileRead {
   id: string;
   company_name: string;

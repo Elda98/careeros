@@ -255,7 +255,9 @@ function OpportunityCard({
     <Card>
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
-          <CardTitle className="text-body">{opportunity.title}</CardTitle>
+          <CardTitle className="text-body" dir="auto">
+            {opportunity.title}
+          </CardTitle>
           <p className="mt-1 text-caption text-muted-foreground">
             {opportunity.location || "—"} · {opportunity.opportunity_type === "job" ? t("opportunities.form.typeJob") : t("opportunities.form.typeInternship")}
           </p>
@@ -326,7 +328,8 @@ function OpportunityCard({
                     <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2.5">
                       {readiness.target_role && (
                         <span className="text-caption text-foreground">
-                          {t("opportunities.candidateTargetRole", { role: readiness.target_role })}
+                          {t("opportunities.candidateTargetRoleLabel")}{" "}
+                          <span dir="auto">{readiness.target_role}</span>
                         </span>
                       )}
                       {readiness.confidence && <ConfidenceBadge level={readiness.confidence} />}

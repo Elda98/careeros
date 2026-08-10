@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from careeros_ai.agents.base import BaseAgent, GenerationFailed
 from careeros_ai.capabilities.grounding import format_grounding_refs, require_nonempty_grounding
+from careeros_ai.capabilities.language import language_instruction
 from careeros_ai.knowledge.contracts import (
     RoadmapInput,
     RoadmapItemContent,
@@ -53,9 +54,10 @@ def _generate(state: _State, llm: ChatGroq) -> _State:
     structured_llm = llm.with_structured_output(_ItemsResponse)
     gaps_text = "\n".join(f"- {g.skill}: {g.description}" for g in inp.analysis.gaps)
     prompt = f"Skill-Gap Analysis summary: {inp.analysis.summary}\nGaps:\n{gaps_text}\n"
+    system_prompt = f"{_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     try:
         result: _ItemsResponse = structured_llm.invoke(
-            [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=prompt)]
+            [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
         )
     except Exception as exc:
         raise GenerationFailed(f"Roadmap generation failed: {exc}") from exc

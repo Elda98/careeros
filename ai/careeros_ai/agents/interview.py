@@ -32,6 +32,7 @@ from pydantic import BaseModel
 
 from careeros_ai.agents.base import BaseAgent, GenerationFailed
 from careeros_ai.capabilities.grounding import require_nonempty_grounding
+from careeros_ai.capabilities.language import language_instruction
 from careeros_ai.knowledge.contracts import (
     AnswerFeedback,
     ConfidenceLevel,
@@ -109,9 +110,10 @@ def _analyze_answer(state: _TurnState, llm: ChatGroq) -> _TurnState:
         "Grade this single answer. Set warrants_follow_up=true only if the answer is vague, "
         "incomplete, or begs an obvious clarifying question — not for every answer."
     )
+    system_prompt = f"{_TURN_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     try:
         feedback: AnswerFeedback = structured_llm.invoke(
-            [SystemMessage(content=_TURN_SYSTEM_PROMPT), HumanMessage(content=prompt)]
+            [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
         )
     except Exception as exc:
         raise GenerationFailed(f"Interview answer analysis failed: {exc}") from exc
@@ -149,9 +151,10 @@ def _generate_follow_up(state: _TurnState, llm: ChatGroq) -> _TurnState:
         f"Why a follow-up is warranted: {fb.follow_up_reason if fb else ''}\n\n"
         "Write ONE natural, specific follow-up question that probes this gap directly."
     )
+    system_prompt = f"{_TURN_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     try:
         result: _FollowUpResponse = structured_llm.invoke(
-            [SystemMessage(content=_TURN_SYSTEM_PROMPT), HumanMessage(content=prompt)]
+            [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
         )
     except Exception as exc:
         raise GenerationFailed(f"Interview follow-up generation failed: {exc}") from exc
@@ -188,9 +191,10 @@ def _generate_next_question(state: _TurnState, llm: ChatGroq) -> _TurnState:
             )
         )
     )
+    system_prompt = f"{_TURN_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     try:
         result: _NextQuestionResponse = structured_llm.invoke(
-            [SystemMessage(content=_TURN_SYSTEM_PROMPT), HumanMessage(content=prompt)]
+            [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
         )
     except Exception as exc:
         raise GenerationFailed(f"Interview question generation failed: {exc}") from exc
@@ -285,9 +289,10 @@ def _synthesize_report(state: _ReportState, llm: ChatGroq) -> _ReportState:
         "recommendation for the candidate's next interview attempt, and a technical_readiness "
         "score (0-100) reflecting only the technical/role-specific answers in this transcript."
     )
+    system_prompt = f"{_REPORT_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     try:
         body: _ReportBody = structured_llm.invoke(
-            [SystemMessage(content=_REPORT_SYSTEM_PROMPT), HumanMessage(content=prompt)]
+            [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
         )
     except Exception as exc:
         raise GenerationFailed(f"Interview report synthesis failed: {exc}") from exc

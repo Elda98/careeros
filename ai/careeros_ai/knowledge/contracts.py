@@ -65,6 +65,11 @@ class SkillGapAnalysisInput(BaseModel):
     profile: ProfileSnapshot
     goal: GoalSnapshot
     previous_version: SkillGapAnalysisOutput | None = None
+    # The user's persisted UI language (User.locale) — every generated
+    # field (summary, gap descriptions, confidence_reason) must be written
+    # in it. Defaults to "en" so every existing caller/test keeps working
+    # unchanged.
+    locale: str = "en"
 
 
 class SkillGapAnalysisOutput(BaseModel):
@@ -100,6 +105,7 @@ class RoadmapItemContent(BaseModel):
 class RoadmapInput(BaseModel):
     analysis: SkillGapAnalysisOutput
     previous_version: RoadmapOutput | None = None
+    locale: str = "en"
 
 
 class RoadmapOutput(BaseModel):
@@ -139,6 +145,7 @@ class CVFeedbackInput(BaseModel):
 
     goal: GoalSnapshot
     document_text: str
+    locale: str = "en"
 
 
 class CVFeedbackOutput(BaseModel):
@@ -218,6 +225,7 @@ class InterviewTurnInput(BaseModel):
     goal: GoalSnapshot
     cv_text: str = ""
     config: InterviewConfig
+    locale: str = "en"
     history: list[InterviewExchange] = Field(default_factory=list)
     pending_question: str = ""
     pending_question_category: InterviewQuestionCategory | None = None
@@ -236,6 +244,7 @@ class InterviewReportInput(BaseModel):
     profile: ProfileSnapshot
     goal: GoalSnapshot
     config: InterviewConfig
+    locale: str = "en"
     history: list[InterviewExchange]
 
 

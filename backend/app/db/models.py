@@ -96,6 +96,14 @@ class User(Base):
     clerk_user_id: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     account_type: Mapped[AccountType | None] = mapped_column(Enum(AccountType), nullable=True)
+    # A plain String, deliberately not an Enum — this project's one real
+    # migration incident (see migration b192831432f0's own history) was
+    # caused by SQLAlchemy's generic Enum type; a locale code has no
+    # DDL-level enum benefit worth that risk. Validated as "en"/"ar" at the
+    # Pydantic schema layer instead (app/schemas/account.py). Read by every
+    # AI-generating agent call site to put the model's output in the
+    # user's actual UI language, not just the frontend chrome around it.
+    locale: Mapped[str] = mapped_column(String, nullable=False, server_default="en")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     profile: Mapped[Profile | None] = relationship(back_populates="user", uselist=False)

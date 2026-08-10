@@ -296,7 +296,7 @@ function ProfileGoalCard({ profile, activeGoal }: { profile: Fetched<ProfileRead
               <div>
                 <p className="text-caption font-medium text-muted-foreground">{t("settings.profile.activeGoal")}</p>
                 {activeGoal.data ? (
-                  <p className="text-small text-foreground">
+                  <p className="text-small text-foreground" dir="auto">
                     {activeGoal.data.target_role}
                     {activeGoal.data.target_field && (
                       <span className="text-muted-foreground"> — {activeGoal.data.target_field}</span>

@@ -65,7 +65,9 @@ export function OpportunitiesView({
             <Card key={opportunity.id} className="animate-fade-in">
               <CardHeader className="flex-row items-start justify-between space-y-0">
                 <div>
-                  <CardTitle className="text-body">{opportunity.title}</CardTitle>
+                  <CardTitle className="text-body" dir="auto">
+                    {opportunity.title}
+                  </CardTitle>
                   <p className="mt-1 text-small text-muted-foreground">{opportunity.company_name}</p>
                 </div>
                 <Badge variant="outline">
@@ -79,7 +81,11 @@ export function OpportunitiesView({
                     {opportunity.location}
                   </p>
                 )}
-                {opportunity.description && <p className="text-small text-foreground">{opportunity.description}</p>}
+                {opportunity.description && (
+                  <p className="text-small text-foreground" dir="auto">
+                    {opportunity.description}
+                  </p>
+                )}
                 {opportunity.required_skills.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {opportunity.required_skills.map((skill) => (
@@ -114,7 +120,9 @@ export function OpportunitiesView({
                 className="flex items-center justify-between rounded-xl border border-border-subtle bg-surface p-3.5"
               >
                 <div>
-                  <p className="font-medium text-foreground">{application.opportunity.title}</p>
+                  <p className="font-medium text-foreground" dir="auto">
+                    {application.opportunity.title}
+                  </p>
                   <p className="text-small text-muted-foreground">{application.opportunity.company_name}</p>
                 </div>
                 <Badge variant="outline">{t(`opportunities.applicantStatus.${application.status}`)}</Badge>

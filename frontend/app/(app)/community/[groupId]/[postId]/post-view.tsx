@@ -92,7 +92,9 @@ export function PostView({
       <Card className="mt-3 animate-fade-in">
         <CardHeader className="flex-row items-start justify-between space-y-0">
           <div>
-            <CardTitle className="text-title">{post.title || t(POST_TYPE_KEY[post.post_type])}</CardTitle>
+            <CardTitle className="text-title" dir="auto">
+              {post.title || t(POST_TYPE_KEY[post.post_type])}
+            </CardTitle>
             <p className="mt-1 text-caption text-muted-foreground">
               {post.author.display_label} · {new Date(post.created_at).toLocaleDateString()}
             </p>
@@ -100,7 +102,9 @@ export function PostView({
           <Badge variant="outline">{t(POST_TYPE_KEY[post.post_type])}</Badge>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="whitespace-pre-wrap text-body text-foreground">{post.body}</p>
+          <p className="whitespace-pre-wrap text-body text-foreground" dir="auto">
+            {post.body}
+          </p>
           <Button
             variant="ghost"
             size="sm"
@@ -129,7 +133,9 @@ export function PostView({
                 {comment.author.display_label}{" "}
                 <span className="font-normal text-muted-foreground">{new Date(comment.created_at).toLocaleDateString()}</span>
               </p>
-              <p className="mt-1 text-small text-foreground">{comment.body}</p>
+              <p className="mt-1 text-small text-foreground" dir="auto">
+                {comment.body}
+              </p>
             </div>
           ))}
         </div>

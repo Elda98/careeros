@@ -37,13 +37,19 @@ export function ServicesView({
           <Card key={service.id} className="animate-fade-in">
             <CardHeader className="flex-row items-start justify-between space-y-0">
               <div>
-                <CardTitle className="text-body">{service.title}</CardTitle>
+                <CardTitle className="text-body" dir="auto">
+                  {service.title}
+                </CardTitle>
                 <p className="mt-1 text-small text-muted-foreground">{service.provider_title}</p>
               </div>
               {service.category && <Badge variant="outline">{service.category}</Badge>}
             </CardHeader>
             <CardContent className="space-y-3">
-              {service.description && <p className="text-small text-foreground">{service.description}</p>}
+              {service.description && (
+                <p className="text-small text-foreground" dir="auto">
+                  {service.description}
+                </p>
+              )}
               {service.provider_expertise.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {service.provider_expertise.map((skill) => (

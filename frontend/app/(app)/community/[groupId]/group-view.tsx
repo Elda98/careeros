@@ -117,7 +117,9 @@ export function GroupView({
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-title text-foreground">{group.name}</h1>
+          <h1 className="text-title text-foreground" dir="auto">
+            {group.name}
+          </h1>
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-caption text-muted-foreground">
             {group.is_owner && <Badge variant="primary">{t("community.owner")}</Badge>}
             <Badge variant="outline">{t(GROUP_TYPE_KEY[group.group_type])}</Badge>
@@ -127,7 +129,11 @@ export function GroupView({
             </span>
             <span>{t("community.postCount", { count: group.post_count })}</span>
           </p>
-          {group.description && <p className="mt-2 text-small text-foreground">{group.description}</p>}
+          {group.description && (
+            <p className="mt-2 text-small text-foreground" dir="auto">
+              {group.description}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {group.is_owner && (
@@ -190,7 +196,11 @@ export function GroupView({
           <Card key={post.id}>
             <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
               <div>
-                <Link href={`/community/${group.id}/${post.id}`} className="text-body font-semibold text-foreground hover:underline">
+                <Link
+                  href={`/community/${group.id}/${post.id}`}
+                  className="text-body font-semibold text-foreground hover:underline"
+                  dir="auto"
+                >
                   {post.title || t(POST_TYPE_KEY[post.post_type])}
                 </Link>
                 <p className="mt-0.5 text-caption text-muted-foreground">
@@ -200,7 +210,9 @@ export function GroupView({
               <Badge variant="outline">{t(POST_TYPE_KEY[post.post_type])}</Badge>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="line-clamp-3 text-small text-foreground">{post.body}</p>
+              <p className="line-clamp-3 text-small text-foreground" dir="auto">
+                {post.body}
+              </p>
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"

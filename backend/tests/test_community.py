@@ -1,6 +1,9 @@
 """Community: group creation/membership, post/comment/reaction CRUD, the
 "join before you participate" rule, and author-only delete permissions.
-Shared across every persona — no require_account_type gate anywhere here.
+Browsing/joining/posting is shared across every persona — but *creating*
+a group is gated server-side to COMPANY/SERVICE_PROVIDER only (see
+community.py's module docstring for why); Student/Graduate must be
+rejected by the API itself, not merely have the button hidden.
 """
 
 from __future__ import annotations
@@ -23,9 +26,34 @@ def _reset():
 
 
 def _create_group(client: TestClient, *, name: str = "Backend Engineers") -> dict:
+    client.put("/account/type", json={"account_type": "company"})
     response = client.post("/community/groups", json={"group_type": "skill", "name": name, "description": "Talk shop."})
     assert response.status_code == 201
     return response.json()
+
+
+def test_student_cannot_create_a_community(client: TestClient) -> None:
+    client.put("/account/type", json={"account_type": "student"})
+    response = client.post(
+        "/community/groups", json={"group_type": "skill", "name": "Should Not Exist", "description": ""}
+    )
+    assert response.status_code == 403
+
+
+def test_graduate_cannot_create_a_community(client: TestClient) -> None:
+    client.put("/account/type", json={"account_type": "graduate"})
+    response = client.post(
+        "/community/groups", json={"group_type": "skill", "name": "Should Not Exist", "description": ""}
+    )
+    assert response.status_code == 403
+
+
+def test_service_provider_can_create_a_community(client: TestClient) -> None:
+    client.put("/account/type", json={"account_type": "service_provider"})
+    response = client.post(
+        "/community/groups", json={"group_type": "skill", "name": "Career Coaches United", "description": ""}
+    )
+    assert response.status_code == 201
 
 
 def test_creating_a_group_auto_joins_the_creator(client: TestClient) -> None:

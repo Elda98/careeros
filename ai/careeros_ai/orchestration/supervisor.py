@@ -46,13 +46,17 @@ class SupervisorState(TypedDict):
     roadmap_draft: RoadmapOutput | None
     approval_decision: str | None
     approval_feedback: str | None
+    locale: str
 
 
 def _run_skill_gap_agent(state: SupervisorState, agent: SkillGapAnalysisAgent) -> SupervisorState:
     log_event("supervisor.dispatch", to_agent="SkillGapAnalysisAgent")
     output = agent.run(
         SkillGapAnalysisInput(
-            profile=state["profile"], goal=state["goal"], previous_version=state["previous_analysis"]
+            profile=state["profile"],
+            goal=state["goal"],
+            previous_version=state["previous_analysis"],
+            locale=state["locale"],
         )
     )
     return {**state, "analysis_output": output}
@@ -63,7 +67,7 @@ def _run_roadmap_agent(state: SupervisorState, agent: RoadmapAgent) -> Superviso
     # Structured hand-off: the prior node's typed output DTO becomes this
     # agent's typed input directly — no re-serialization through strings.
     output = agent.run(
-        RoadmapInput(analysis=state["analysis_output"], previous_version=state["previous_roadmap"])
+        RoadmapInput(analysis=state["analysis_output"], previous_version=state["previous_roadmap"], locale=state["locale"])
     )
     return {**state, "roadmap_draft": output}
 
@@ -141,6 +145,7 @@ class CareerSupervisor:
         goal: GoalSnapshot,
         previous_analysis: SkillGapAnalysisOutput | None,
         previous_roadmap: RoadmapOutput | None,
+        locale: str = "en",
     ) -> dict:
         """Runs Skill-Gap Analysis -> Roadmap draft, then stops at the
         approval interrupt. Returns a dict with the interrupt payload
@@ -157,6 +162,7 @@ class CareerSupervisor:
                 "roadmap_draft": None,
                 "approval_decision": None,
                 "approval_feedback": None,
+                "locale": locale,
             },
             config=config,
         )

@@ -37,6 +37,29 @@ def test_set_account_type_rejects_unknown_value(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+def test_account_type_cannot_be_changed_once_set(client: TestClient) -> None:
+    """A role is a one-time choice. Once assigned, a Student must not be
+    able to become a Company (or any other role) by calling this endpoint
+    again — enforced server-side, not just by the frontend no longer
+    routing back to the role-selection screen."""
+    first = client.put("/account/type", json={"account_type": "student"})
+    assert first.status_code == 200
+
+    second = client.put("/account/type", json={"account_type": "company"})
+    assert second.status_code == 409
+
+    # The original role is untouched.
+    follow_up = client.get("/account/type")
+    assert follow_up.json()["account_type"] == "student"
+
+
+def test_account_type_put_is_idempotent_for_the_same_value(client: TestClient) -> None:
+    client.put("/account/type", json={"account_type": "student"})
+    repeat = client.put("/account/type", json={"account_type": "student"})
+    assert repeat.status_code == 200
+    assert repeat.json()["account_type"] == "student"
+
+
 def test_company_profile_get_creates_empty_then_update_persists(client: TestClient) -> None:
     client.put("/account/type", json={"account_type": "company"})
 

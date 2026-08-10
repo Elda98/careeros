@@ -145,7 +145,9 @@ export function NotificationsView({
                           )}
                           <span className="text-caption text-muted-foreground">{timeLabel}</span>
                         </div>
-                        <p className="mt-1.5 text-small text-foreground">{n.message}</p>
+                        <p className="mt-1.5 text-small text-foreground" dir="auto">
+                          {n.message}
+                        </p>
                         {href && (
                           <Link
                             href={href}

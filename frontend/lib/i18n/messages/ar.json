@@ -162,7 +162,7 @@
   },
   "dashboard": {
     "greeting": "أهلًا بعودتك",
-    "greetingWithGoal": "هدفك: {{role}}",
+    "careerGoalLabel": "هدفك المهني",
     "noGoalYet": "حدّد هدفًا مهنيًا للحصول على تحليل وخارطة طريق ومؤشر جاهزية مخصصة لك.",
     "recommendedNext": "التوصية التالية",
     "topGaps": "أبرز الفجوات المهارية",
@@ -617,7 +617,7 @@
     "applyError": "تعذّر إرسال طلبك",
     "myApplications": "طلباتك",
     "noApplicationsYet": "لم تتقدم لأي فرصة بعد.",
-    "candidateTargetRole": "يستهدف: {{role}}"
+    "candidateTargetRoleLabel": "يستهدف:"
   },
   "providerServices": {
     "postNew": "إضافة خدمة",
@@ -738,6 +738,11 @@
     "owner": "المالك",
     "edit": "تعديل",
     "moderateDelete": "إزالة",
+    "searchPlaceholder": "ابحث عن مجتمعات",
+    "noSearchResults": "لا توجد مجتمعات مطابقة لـ \"{{query}}\"",
+    "emptyStateTitle": "لا توجد مجتمعات بعد",
+    "emptyStateCreatorHint": "ابدأ أول مجتمع — اختر فئة وامنحه اسمًا.",
+    "emptyStateMemberHint": "الشركات ومقدمو الخدمات على Orbit يمكنهم إنشاء مجتمعات رسمية — تحقق مرة أخرى قريبًا.",
     "memberCount": "{{count}} عضو",
     "postCount": "{{count}} منشور",
     "join": "انضمام",

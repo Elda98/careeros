@@ -1,7 +1,9 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
+import { apiFetch } from "@/lib/api";
 import { DEFAULT_LOCALE, LOCALE_COOKIE, dirFor, type Locale } from "@/lib/i18n/config";
 import en from "@/lib/i18n/messages/en.json";
 import ar from "@/lib/i18n/messages/ar.json";
@@ -42,18 +44,41 @@ export function LocaleProvider({
   children: React.ReactNode;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const { getToken, isSignedIn } = useAuth();
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; SameSite=Lax`;
-    try {
-      localStorage.setItem(LOCALE_COOKIE, next);
-    } catch {
-      // Storage can be unavailable (private browsing); the cookie is the real source of truth.
-    }
-    document.documentElement.lang = next;
-    document.documentElement.dir = dirFor(next);
-  }, []);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      setLocaleState(next);
+      document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      try {
+        localStorage.setItem(LOCALE_COOKIE, next);
+      } catch {
+        // Storage can be unavailable (private browsing); the cookie is the real source of truth.
+      }
+      document.documentElement.lang = next;
+      document.documentElement.dir = dirFor(next);
+
+      // Fire-and-forget: the cookie above stays the source of truth for
+      // the UI chrome itself (rendered instantly, no network round trip
+      // needed); this persists the same choice to the account so every
+      // AI-generating agent call and backend-constructed message
+      // (notifications, confidence reasons) picks it up too — see
+      // backend/app/api/routers/account.py's /account/locale docstring.
+      if (isSignedIn) {
+        getToken()
+          .then((token) =>
+            token ? apiFetch("/account/locale", { method: "PUT", token, body: JSON.stringify({ locale: next }) }) : null,
+          )
+          .catch(() => {
+            // Best-effort — the UI itself already switched via the cookie
+            // above; a failed sync here just means the next AI-generated
+            // result may lag one step behind until it succeeds (e.g. next
+            // language switch, or next sign-in).
+          });
+      }
+    },
+    [getToken, isSignedIn],
+  );
 
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => {

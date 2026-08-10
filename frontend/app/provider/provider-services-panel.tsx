@@ -157,7 +157,9 @@ function ServiceCard({
     <Card>
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div>
-          <CardTitle className="text-body">{service.title}</CardTitle>
+          <CardTitle className="text-body" dir="auto">
+            {service.title}
+          </CardTitle>
           {service.category && <p className="mt-1 text-caption text-muted-foreground">{service.category}</p>}
         </div>
         <Badge variant={service.status === "active" ? "success" : "outline"}>
@@ -165,7 +167,11 @@ function ServiceCard({
         </Badge>
       </CardHeader>
       <CardContent className="space-y-3">
-        {service.description && <p className="text-small text-foreground">{service.description}</p>}
+        {service.description && (
+          <p className="text-small text-foreground" dir="auto">
+            {service.description}
+          </p>
+        )}
         <Button variant="outline" size="sm" onClick={() => onToggleStatus(service)}>
           {service.status === "active" ? t("providerServices.deactivate") : t("providerServices.activate")}
         </Button>

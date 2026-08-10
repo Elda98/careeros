@@ -208,7 +208,7 @@ export function InterviewListView({
                     ) : (
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                     )}
-                    {session.target_role}
+                    <span dir="auto">{session.target_role}</span>
                   </p>
                   <p className="mt-0.5 text-caption text-muted-foreground">
                     {new Date(session.created_at).toLocaleDateString()}

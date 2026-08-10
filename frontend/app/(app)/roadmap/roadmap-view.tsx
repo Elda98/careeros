@@ -241,8 +241,12 @@ export function RoadmapView({
                           {t("roadmap.upNext")}
                         </span>
                       )}
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <p className="mt-1 text-small text-muted-foreground">{item.description}</p>
+                      <p className="font-medium text-foreground" dir="auto">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-small text-muted-foreground" dir="auto">
+                        {item.description}
+                      </p>
                     </div>
 
                     <DropdownMenu>

@@ -35,6 +35,21 @@ def test_refresh_generates_analysis_and_cascades_to_roadmap(client: TestClient) 
     assert roadmap["items"][0]["status"] == "not_started"
 
 
+def test_refresh_notifications_are_genuinely_arabic_when_locale_is_arabic(client: TestClient) -> None:
+    """The AI language contract's backend-constructed half: notification
+    *messages* (not just the frontend chrome around them) must actually be
+    in the user's persisted locale — real Arabic script, not just an
+    untranslated English string sitting next to an Arabic UI."""
+    client.put("/account/locale", json={"locale": "ar"})
+    _complete_onboarding_bar(client)
+    client.post("/ai-career-center/skill-gap-analysis/refresh")
+
+    notifications = client.get("/notifications").json()
+    assert len(notifications) >= 2  # analysis_complete + the roadmap_updated cascade
+    for n in notifications:
+        assert any("؀" <= ch <= "ۿ" for ch in n["message"]), f"expected Arabic script in: {n['message']!r}"
+
+
 def test_refresh_marks_onboarding_completed(client: TestClient) -> None:
     _complete_onboarding_bar(client)
     client.post("/ai-career-center/skill-gap-analysis/refresh")

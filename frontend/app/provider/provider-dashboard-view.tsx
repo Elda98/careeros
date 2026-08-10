@@ -48,7 +48,11 @@ export function ProviderDashboardView({
               ))}
             </div>
           )}
-          {profile?.description && <p className="text-small text-foreground">{profile.description}</p>}
+          {profile?.description && (
+            <p className="text-small text-foreground" dir="auto">
+              {profile.description}
+            </p>
+          )}
           {profile?.contact_info && <p className="text-small text-muted-foreground">{profile.contact_info}</p>}
         </CardContent>
       </Card>

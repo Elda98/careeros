@@ -41,7 +41,11 @@ export function CompanyDashboardView({
         </CardHeader>
         <CardContent className="space-y-2">
           {profile?.industry && <p className="text-small text-muted-foreground">{profile.industry}</p>}
-          {profile?.description && <p className="text-small text-foreground">{profile.description}</p>}
+          {profile?.description && (
+            <p className="text-small text-foreground" dir="auto">
+              {profile.description}
+            </p>
+          )}
           {profile?.website && (
             <a
               href={profile.website}

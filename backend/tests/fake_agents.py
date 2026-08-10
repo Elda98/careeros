@@ -176,7 +176,7 @@ class FakeCareerSupervisor:
     def __init__(self):
         self._threads: dict[str, dict] = {}
 
-    def start(self, *, thread_id, profile, goal, previous_analysis, previous_roadmap) -> dict:
+    def start(self, *, thread_id, profile, goal, previous_analysis, previous_roadmap, locale: str = "en") -> dict:
         analysis = FakeSkillGapAnalysisAgent().run(
             SkillGapAnalysisInput(profile=profile, goal=goal, previous_version=previous_analysis)
         )

@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from careeros_ai.agents.base import BaseAgent, GenerationFailed
 from careeros_ai.capabilities.grounding import format_grounding_refs, require_nonempty_grounding
+from careeros_ai.capabilities.language import language_instruction
 from careeros_ai.knowledge.contracts import (
     ConfidenceLevel,
     CVFeedbackInput,
@@ -56,9 +57,10 @@ def _generate(state: _State, llm: ChatGroq) -> _State:
     prompt = (
         f"Target role: {inp.goal.target_role!r}\n\nSubmitted document:\n{inp.document_text}\n"
     )
+    system_prompt = f"{_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     try:
         result: _ItemsResponse = structured_llm.invoke(
-            [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=prompt)]
+            [SystemMessage(content=system_prompt), HumanMessage(content=prompt)]
         )
     except Exception as exc:
         raise GenerationFailed(f"CV/Profile Feedback generation failed: {exc}") from exc

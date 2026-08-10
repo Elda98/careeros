@@ -27,6 +27,7 @@ from pydantic import BaseModel
 from careeros_ai.agents.base import BaseAgent, GenerationFailed
 from careeros_ai.capabilities.confidence import calibrate_profile_completeness, min_confidence
 from careeros_ai.capabilities.grounding import format_grounding_refs, require_nonempty_grounding
+from careeros_ai.capabilities.language import language_instruction
 from careeros_ai.knowledge.contracts import (
     ConfidenceLevel,
     SkillGap,
@@ -53,6 +54,19 @@ _SYSTEM_PROMPT = (
 )
 
 _TOOLS_BY_NAME = {t.name: t for t in ALL_TOOLS}
+
+# Two fixed-shape fallback strings this agent builds directly (never
+# through the LLM) for the retry-exhaustion edge case — same reasoning as
+# capabilities/confidence.py's own local template dict: this needs its own
+# tiny translation, not the LLM-prompt-level language_instruction().
+_RETRY_EXHAUSTED_SUFFIX = {
+    "en": " Additionally, the analysis did not pass content validation after {retries} retries.",
+    "ar": " كذلك، لم يجتز التحليل التحقق من المحتوى بعد {retries} محاولات إعادة.",
+}
+_UNRELIABLE_SUMMARY_FALLBACK = {
+    "en": "Unable to produce a reliable summary after retrying.",
+    "ar": "تعذّر إنتاج ملخص موثوق بعد إعادة المحاولة.",
+}
 
 # Bounds that make this a real, terminating loop rather than an accidental
 # infinite one — both are shared graph state, not hardcoded into a single
@@ -86,9 +100,10 @@ def _assemble_context(state: _State) -> _State:
         f"experience={inp.profile.experience!r}, skills={inp.profile.skills!r}\n"
         f"Goal: target_role={inp.goal.target_role!r}, target_field={inp.goal.target_field!r}\n"
     )
+    system_prompt = f"{_SYSTEM_PROMPT}\n\n{language_instruction(inp.locale)}"
     return {
         **state,
-        "messages": [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=prompt)],
+        "messages": [SystemMessage(content=system_prompt), HumanMessage(content=prompt)],
         "tool_rounds": 0,
         "retry_count": 0,
     }
@@ -203,7 +218,7 @@ def _retry(state: _State) -> _State:
 
 def _calibrate(state: _State) -> _State:
     inp = state["input"]
-    base_confidence, reason = calibrate_profile_completeness(inp.profile)
+    base_confidence, reason = calibrate_profile_completeness(inp.profile, inp.locale)
     llm_confidence = ConfidenceLevel.HIGH if state["llm_gaps"] else ConfidenceLevel.MEDIUM
     confidence = min_confidence(base_confidence, llm_confidence)
     # A round that exhausted its retry budget without ever validating is
@@ -211,11 +226,13 @@ def _calibrate(state: _State) -> _State:
     # genuine uncertainty left by an answer the validation gate rejected.
     if state["retry_count"] > MAX_RETRIES:
         confidence = ConfidenceLevel.LOW
-        reason = f"{reason} Additionally, the analysis did not pass content validation after {MAX_RETRIES} retries."
+        suffix = _RETRY_EXHAUSTED_SUFFIX.get(inp.locale, _RETRY_EXHAUSTED_SUFFIX["en"]).format(retries=MAX_RETRIES)
+        reason = f"{reason}{suffix}"
 
+    fallback_summary = _UNRELIABLE_SUMMARY_FALLBACK.get(inp.locale, _UNRELIABLE_SUMMARY_FALLBACK["en"])
     state["output"] = SkillGapAnalysisOutput(
         gaps=state["llm_gaps"],
-        summary=state["llm_summary"] or "Unable to produce a reliable summary after retrying.",
+        summary=state["llm_summary"] or fallback_summary,
         confidence=confidence,
         confidence_reason=reason,
         grounded_on=state["grounded_on"],

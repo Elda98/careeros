@@ -341,11 +341,15 @@ function FeedbackItemGroup({ category, items }: { category: CVFeedbackCategory; 
       <ul className="space-y-2.5">
         {items.map((item) => (
           <li key={item.id} className="rounded-xl border border-border-subtle bg-surface p-3.5">
-            <p className="text-small text-foreground">{item.note}</p>
+            <p className="text-small text-foreground" dir="auto">
+              {item.note}
+            </p>
             {item.relevance_to_goal && (
               <div className="mt-2 rounded-lg border-s-2 border-primary bg-secondary/60 p-2.5">
                 <p className="text-caption font-medium text-muted-foreground">{t("cvFeedback.relevance")}</p>
-                <p className="mt-0.5 text-small text-foreground">{item.relevance_to_goal}</p>
+                <p className="mt-0.5 text-small text-foreground" dir="auto">
+                  {item.relevance_to_goal}
+                </p>
               </div>
             )}
             <ExplainButton endpoint={`/ai-career-center/cv-feedback/items/${item.id}/explain`} />

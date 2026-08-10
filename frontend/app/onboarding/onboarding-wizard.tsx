@@ -343,12 +343,16 @@ export function OnboardingWizard() {
                 <ConfidenceBadge level={analysis.confidence} reason={analysis.confidence_reason} />
               </CardHeader>
               <CardContent>
-                <p className="mb-3 text-small text-foreground">{analysis.summary}</p>
+                <p className="mb-3 text-small text-foreground" dir="auto">
+                  {analysis.summary}
+                </p>
                 <ul className="space-y-2">
                   {analysis.gaps.map((gap) => (
                     <li key={gap.id} className="rounded-xl border border-border-subtle bg-surface p-3.5">
                       <p className="font-medium text-foreground">{gap.skill}</p>
-                      <p className="text-small text-muted-foreground">{gap.description}</p>
+                      <p className="text-small text-muted-foreground" dir="auto">
+                        {gap.description}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -366,8 +370,12 @@ export function OnboardingWizard() {
                 <ol className="space-y-2">
                   {roadmap.items.map((item) => (
                     <li key={item.id} className="rounded-xl border border-border-subtle bg-surface p-3.5">
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <p className="text-small text-muted-foreground">{item.description}</p>
+                      <p className="font-medium text-foreground" dir="auto">
+                        {item.title}
+                      </p>
+                      <p className="text-small text-muted-foreground" dir="auto">
+                        {item.description}
+                      </p>
                     </li>
                   ))}
                 </ol>

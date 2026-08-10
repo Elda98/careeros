@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
 import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
-import type { CommunityGroupRead, GoalRead, ProfileRead } from "@/lib/types";
+import type { AccountTypeRead, CommunityGroupRead, GoalRead, ProfileRead } from "@/lib/types";
 
 import { CommunityView } from "./community-view";
 
@@ -41,12 +41,23 @@ async function CommunityContent({ token }: { token: string }) {
   // group name/description client-side in CommunityView. Failing to load
   // either just means no recommendations show, never an error for the
   // page as a whole.
-  const [goal, profile] = await Promise.all([
+  const [goal, profile, accountType] = await Promise.all([
     fetchOptionalSection<GoalRead>("/profile/goals/active", token),
     fetchSection<ProfileRead>("/profile", token),
+    fetchSection<AccountTypeRead>("/account/type", token),
   ]);
 
-  return <CommunityView initialGroups={groups} error={error} goal={goal.data} profile={profile.data} />;
+  // Community *creation* is server-gated to Company/Service Provider (see
+  // backend/app/api/routers/community.py's module docstring) — this only
+  // decides whether to show the button at all; the backend independently
+  // rejects the request either way, so a stale/wrong value here can never
+  // grant an actual capability, only mis-hide a button that would 403 if
+  // clicked.
+  const canCreateGroup = accountType.data?.account_type === "company" || accountType.data?.account_type === "service_provider";
+
+  return (
+    <CommunityView initialGroups={groups} error={error} goal={goal.data} profile={profile.data} canCreateGroup={canCreateGroup} />
+  );
 }
 
 function CommunitySkeleton() {

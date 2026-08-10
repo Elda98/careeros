@@ -163,7 +163,9 @@ export function ProgressView({
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-small text-foreground">{analysis.summary}</p>
+          <p className="text-small text-foreground" dir="auto">
+            {analysis.summary}
+          </p>
         </CardContent>
       </Card>
 
@@ -319,7 +321,9 @@ export function ProgressView({
                             <Badge variant={variant}>{t(`notifications.category.${key}`)}</Badge>
                             <span className="text-caption text-muted-foreground">{labelForGroup(group.key, date, locale)}</span>
                           </div>
-                          <p className="mt-1.5 text-small text-foreground">{n.message}</p>
+                          <p className="mt-1.5 text-small text-foreground" dir="auto">
+                            {n.message}
+                          </p>
                         </div>
                       </div>
                     </li>

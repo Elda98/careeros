@@ -103,10 +103,24 @@ export function DashboardView({
   return (
     <>
       <div>
-        <h1 className="text-title text-foreground">
-          {goal ? t("dashboard.greetingWithGoal", { role: goal.target_role }) : t("dashboard.greeting")}
-        </h1>
-        {!goal && <p className="mt-1 text-small text-muted-foreground">{t("dashboard.noGoalYet")}</p>}
+        <h1 className="text-title text-foreground">{t("dashboard.greeting")}</h1>
+        {goal ? (
+          // The label is always in the UI language; the value is the
+          // user's own free-text goal (any language, any capitalization)
+          // — kept as its own visually distinct piece rather than spliced
+          // into a translated sentence, so the two never read as one
+          // mixed-language phrase.
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-caption font-medium uppercase tracking-wide text-muted-foreground">
+              {t("dashboard.careerGoalLabel")}
+            </span>
+            <span className="text-heading font-semibold text-foreground" dir="auto">
+              {goal.target_role}
+            </span>
+          </div>
+        ) : (
+          <p className="mt-1 text-small text-muted-foreground">{t("dashboard.noGoalYet")}</p>
+        )}
       </div>
 
       <Card className="mt-4 overflow-hidden">
@@ -121,8 +135,12 @@ export function DashboardView({
         <CardContent className="space-y-4">
           {dashboard.next_action ? (
             <div>
-              <p className="text-title text-foreground">{dashboard.next_action.title}</p>
-              <p className="mt-1.5 text-small text-muted-foreground">{dashboard.next_action.reason}</p>
+              <p className="text-title text-foreground" dir="auto">
+                {dashboard.next_action.title}
+              </p>
+              <p className="mt-1.5 text-small text-muted-foreground" dir="auto">
+                {dashboard.next_action.reason}
+              </p>
             </div>
           ) : (
             <div>
@@ -207,7 +225,9 @@ export function DashboardView({
           <div className="space-y-2">
             {recentNotifications.map((n) => (
               <div key={n.id} className="rounded-xl border border-border-subtle bg-surface p-3.5">
-                <p className="text-small text-foreground">{n.message}</p>
+                <p className="text-small text-foreground" dir="auto">
+                  {n.message}
+                </p>
               </div>
             ))}
           </div>

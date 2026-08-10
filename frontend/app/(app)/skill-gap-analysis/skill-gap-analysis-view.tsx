@@ -126,7 +126,9 @@ export function SkillGapAnalysisView({
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-body text-foreground">{analysis.summary}</p>
+          <p className="text-body text-foreground" dir="auto">
+            {analysis.summary}
+          </p>
 
           <h2 className="mt-6 text-small font-medium text-muted-foreground">{t("skillGapAnalysis.gapsTitle")}</h2>
           <ul className="mt-3 space-y-3">
@@ -139,7 +141,9 @@ export function SkillGapAnalysisView({
                   <p className="font-medium text-foreground">{gap.skill}</p>
                   <Badge variant={SEVERITY_VARIANT[gap.severity]}>{t(SEVERITY_KEY[gap.severity])}</Badge>
                 </div>
-                <p className="mt-1 text-small text-muted-foreground">{gap.description}</p>
+                <p className="mt-1 text-small text-muted-foreground" dir="auto">
+                  {gap.description}
+                </p>
                 <ExplainButton endpoint={`/ai-career-center/skill-gap-analysis/gaps/${gap.id}/explain`} />
               </li>
             ))}
@@ -167,7 +171,9 @@ export function SkillGapAnalysisView({
               <Card key={service.id}>
                 <CardHeader className="flex-row items-start justify-between space-y-0">
                   <div>
-                    <p className="font-medium text-foreground">{service.title}</p>
+                    <p className="font-medium text-foreground" dir="auto">
+                      {service.title}
+                    </p>
                     <p className="mt-1 text-small text-muted-foreground">{service.provider_title}</p>
                   </div>
                   {service.category && <Badge variant="outline">{service.category}</Badge>}

@@ -152,12 +152,7 @@ async def _persist_roadmap_output(
     db.add(roadmap)
     # FR-NOTIF-4: the roadmap regenerated as a cascade of the analysis the
     # user directly requested, not a direct request of its own — notify.
-    notify(
-        db,
-        user,
-        category="roadmap_updated",
-        message=f"Your roadmap has been updated (version {roadmap.version}).",
-    )
+    notify(db, user, category="roadmap_updated", message_key="roadmap_updated", version=roadmap.version)
     await db.commit()
     await db.refresh(roadmap, attribute_names=["items"])
     return roadmap
@@ -172,6 +167,7 @@ async def _generate_roadmap(
             RoadmapInput(
                 analysis=_to_output_dto(analysis),
                 previous_version=_to_roadmap_output_dto(previous) if previous else None,
+                locale=user.locale,
             )
         )
     except GenerationFailed as exc:
@@ -227,6 +223,7 @@ async def refresh_skill_gap_analysis(
                 ),
                 goal=GoalSnapshot(user_id=user.id, target_role=goal.target_role, target_field=goal.target_field),
                 previous_version=_to_output_dto(previous) if previous else None,
+                locale=user.locale,
             )
         )
     except GenerationFailed as exc:
@@ -253,12 +250,7 @@ async def refresh_skill_gap_analysis(
         db.add(user.profile)
 
     # BR-NOTIF-1(a): a requested analysis completes.
-    notify(
-        db,
-        user,
-        category="analysis_complete",
-        message=f"Your skill-gap analysis (version {analysis.version}) is ready.",
-    )
+    notify(db, user, category="analysis_complete", message_key="analysis_complete", version=analysis.version)
 
     await db.commit()
     await db.refresh(analysis, attribute_names=["gaps"])
@@ -317,6 +309,7 @@ async def start_career_plan(
             goal=GoalSnapshot(user_id=user.id, target_role=goal.target_role, target_field=goal.target_field),
             previous_analysis=_to_output_dto(previous_analysis) if previous_analysis else None,
             previous_roadmap=_to_roadmap_output_dto(previous_roadmap) if previous_roadmap else None,
+            locale=user.locale,
         )
     except GenerationFailed as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
@@ -339,12 +332,7 @@ async def start_career_plan(
         user.profile.onboarding_completed = True
         db.add(user.profile)
 
-    notify(
-        db,
-        user,
-        category="analysis_complete",
-        message=f"Your skill-gap analysis (version {analysis.version}) is ready.",
-    )
+    notify(db, user, category="analysis_complete", message_key="analysis_complete", version=analysis.version)
     await db.commit()
     await db.refresh(analysis, attribute_names=["gaps"])
 
@@ -517,6 +505,7 @@ async def submit_cv_feedback(
             CVFeedbackInput(
                 goal=GoalSnapshot(user_id=user.id, target_role=goal.target_role, target_field=goal.target_field),
                 document_text=document_text,
+                locale=user.locale,
             )
         )
     except GenerationFailed as exc:
@@ -535,12 +524,7 @@ async def submit_cv_feedback(
     ]
     db.add(cv_round)
     # BR-NOTIF-1(a): a requested feedback review completes.
-    notify(
-        db,
-        user,
-        category="cv_feedback_complete",
-        message=f"Feedback for your CV (round {cv_round.round_number}) is ready.",
-    )
+    notify(db, user, category="cv_feedback_complete", message_key="cv_feedback_complete", round=cv_round.round_number)
     await db.commit()
     await db.refresh(cv_round, attribute_names=["items"])
     return cv_round

@@ -147,7 +147,9 @@ export function InterviewSessionView({
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-title text-foreground">{session.target_role}</h1>
+          <h1 className="text-title text-foreground" dir="auto">
+            {session.target_role}
+          </h1>
           <p className="mt-1 flex flex-wrap gap-1.5 text-caption text-muted-foreground">
             <Badge variant="outline">{t(`interview.form.level${capitalize(session.experience_level)}`)}</Badge>
             <Badge variant="outline">{t(`interview.form.type${capitalize(session.interview_type)}`)}</Badge>
@@ -181,7 +183,9 @@ export function InterviewSessionView({
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
-            <p className="text-body text-foreground">{report.summary}</p>
+            <p className="text-body text-foreground" dir="auto">
+              {report.summary}
+            </p>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <ReportStat label={t("interview.report.answerQuality")} value={report.answer_quality} />
@@ -196,7 +200,9 @@ export function InterviewSessionView({
 
             <div className="rounded-lg border-s-2 border-primary bg-secondary/60 p-3">
               <p className="text-caption font-medium text-foreground">{t("interview.report.nextInterview")}</p>
-              <p className="mt-1 text-small text-foreground">{report.next_interview_recommendation}</p>
+              <p className="mt-1 text-small text-foreground" dir="auto">
+                {report.next_interview_recommendation}
+              </p>
             </div>
 
             {report.voice_summary && (
@@ -238,19 +244,25 @@ export function InterviewSessionView({
         {questions.map((question) => (
           <Card key={question.id}>
             <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
-              <CardTitle className="text-body">{question.question_text}</CardTitle>
+              <CardTitle className="text-body" dir="auto">
+                {question.question_text}
+              </CardTitle>
               <Badge variant="outline">{t(CATEGORY_KEY[question.category])}</Badge>
             </CardHeader>
             {question.answer && (
               <CardContent className="space-y-3">
-                <p className="text-small text-foreground">{question.answer.answer_text}</p>
+                <p className="text-small text-foreground" dir="auto">
+                  {question.answer.answer_text}
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   <Badge variant="outline">{t("interview.scores.quality")}: {question.answer.quality_score}</Badge>
                   <Badge variant="outline">{t("interview.scores.clarity")}: {question.answer.clarity_score}</Badge>
                   <Badge variant="outline">{t("interview.scores.relevance")}: {question.answer.relevance_score}</Badge>
                   <Badge variant="outline">{t("interview.scores.structure")}: {question.answer.structure_score}</Badge>
                 </div>
-                <p className="text-small text-muted-foreground">{question.answer.feedback_note}</p>
+                <p className="text-small text-muted-foreground" dir="auto">
+                  {question.answer.feedback_note}
+                </p>
                 {question.answer.speech_rate_wpm !== null && (
                   <div className="flex flex-wrap items-center gap-1.5 border-t border-border-subtle pt-2.5">
                     <Badge variant="outline">{t("interview.video.pace")}: {question.answer.speech_rate_wpm} {t("interview.video.wpm")}</Badge>
@@ -261,7 +273,9 @@ export function InterviewSessionView({
                 {question.answer.example_improved_answer && (
                   <div className="rounded-lg border-s-2 border-primary bg-secondary/60 p-3">
                     <p className="text-caption font-medium text-foreground">{t("interview.exampleAnswer")}</p>
-                    <p className="mt-1 text-small text-foreground">{question.answer.example_improved_answer}</p>
+                    <p className="mt-1 text-small text-foreground" dir="auto">
+                      {question.answer.example_improved_answer}
+                    </p>
                   </div>
                 )}
                 <ExplainButton endpoint={`/interview/sessions/${session.id}/answers/${question.answer.id}/explain`} />
@@ -333,7 +347,7 @@ function ReportList({ title, items, icon }: { title: string; items: string[]; ic
         {items.map((item) => (
           <li key={`${icon}-${item}`} className="flex items-start gap-2 text-small text-muted-foreground">
             <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" aria-hidden="true" />
-            {item}
+            <span dir="auto">{item}</span>
           </li>
         ))}
       </ul>

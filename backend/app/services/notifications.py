@@ -17,10 +17,11 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.i18n import localize
 from app.db.models import NotificationRecord, User
 
 
-def notify(db: AsyncSession, user: User, category: str, message: str) -> None:
+def notify(db: AsyncSession, user: User, category: str, *, message_key: str, **params: object) -> None:
     """Queues a notification write on the given session — does not commit;
     the caller's own commit (already happening for the entity that triggered
     this notification) covers it, so a notification is never left dangling
@@ -31,8 +32,15 @@ def notify(db: AsyncSession, user: User, category: str, message: str) -> None:
     already be loaded (it is, via `app/api/deps.py`'s eager-load options);
     a user with no preference row yet (never visited Settings) has muted
     nothing, by definition.
+
+    Takes a message *key* (+ format params), not a pre-formatted string —
+    `app/core/i18n.py` resolves it against the user's own persisted
+    `locale`, so a notification is written in the language the user
+    actually reads, not whatever language happened to be hardcoded at the
+    call site.
     """
     muted = user.notification_preference.muted_categories if user.notification_preference else []
     if category in muted:
         return
+    message = localize(message_key, user.locale, **params)
     db.add(NotificationRecord(user_id=user.id, category=category, message=message))

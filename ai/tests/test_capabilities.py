@@ -28,6 +28,20 @@ def test_incomplete_profile_yields_reduced_confidence():
     assert "missing" in reason.lower()
 
 
+def test_confidence_reason_is_genuinely_arabic_when_locale_is_arabic():
+    complete_profile = ProfileSnapshot(
+        user_id=uuid4(), background="BSc CS", education="KSU", experience="internship", skills=["Python"]
+    )
+    _, reason_ar = calibrate_profile_completeness(complete_profile, "ar")
+    _, reason_en = calibrate_profile_completeness(complete_profile, "en")
+    assert reason_ar != reason_en
+    assert any("؀" <= ch <= "ۿ" for ch in reason_ar)  # contains real Arabic script
+
+    incomplete_profile = ProfileSnapshot(user_id=uuid4(), background="BSc CS")
+    _, incomplete_reason_ar = calibrate_profile_completeness(incomplete_profile, "ar")
+    assert any("؀" <= ch <= "ۿ" for ch in incomplete_reason_ar)
+
+
 def test_min_confidence_takes_the_lower_bound():
     assert min_confidence(ConfidenceLevel.HIGH, ConfidenceLevel.LOW) == ConfidenceLevel.LOW
     assert min_confidence(ConfidenceLevel.MEDIUM, ConfidenceLevel.HIGH) == ConfidenceLevel.MEDIUM

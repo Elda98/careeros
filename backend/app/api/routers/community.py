@@ -1,24 +1,31 @@
-"""Community module — shared across every persona (Student/Graduate/
-Company/Service Provider), not scoped to one account type. Group creation
-is self-serve (any authenticated user, same pattern as JobOpportunity/
-ServiceListing); browsing is open to any authenticated user; posting/
-commenting/reacting requires having joined the group first (an explicit,
-user-initiated action — see models.py's own ADR-001 note on why this is
-the safe half of "Professional Community").
+"""Community module — browsing/joining/posting is shared across every
+persona (Student/Graduate/Company/Service Provider), not scoped to one
+account type. Posting/commenting/reacting requires having joined the
+group first (an explicit, user-initiated action — see models.py's own
+ADR-001 note on why this is the safe half of "Professional Community").
 
-Ownership/moderation model: a normal member is NOT an administrator of
-the platform's Community feature, but the person who creates a specific
-group IS that group's owner — the same scoped, standard pattern as a
-Discord server owner or subreddit moderator, not a platform-wide admin
-role (which this product has no other concept of, and inventing one for
-Community alone would be out of proportion). Ownership is deliberately
-*derived*, not a stored column: the owner is whichever member's
-`CommunityMembership.joined_at` is earliest for that group — always the
-creator, since `create_group` inserts their membership in the same
-transaction as the group itself, before anyone else could possibly join.
-This needed no new migration. Owners can edit their group and delete any
-post/comment within it (moderation); every other member can only delete
-their own content.
+Group *creation* is deliberately NOT open to every account type — a
+Student/Graduate is an individual career-seeker, not a community host,
+and letting any of them spin up an unlimited number of groups with no
+oversight is a real product/moderation risk, not just a UI preference
+(a frontend-only restriction here would be pure security theater — see
+CONTRIBUTING.md's own rule against trusting client-side hiding for
+anything that matters). Reuses the *existing* AccountType mechanism
+rather than inventing a new admin/moderator role: only COMPANY and
+SERVICE_PROVIDER accounts — the ecosystem's professional/institutional
+personas — may create a community, the same `require_account_type`
+primitive every other role-gated write in this codebase already uses.
+
+Ownership/moderation model: the person who creates a specific group IS
+that group's owner — the same scoped, standard pattern as a Discord
+server owner or subreddit moderator, not a platform-wide admin role.
+Ownership is deliberately *derived*, not a stored column: the owner is
+whichever member's `CommunityMembership.joined_at` is earliest for that
+group — always the creator, since `create_group` inserts their
+membership in the same transaction as the group itself, before anyone
+else could possibly join. This needed no new migration. Owners can edit
+their group and delete any post/comment within it (moderation); every
+other member can only delete their own content.
 """
 
 from __future__ import annotations
@@ -30,8 +37,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, require_account_type
 from app.db.models import (
+    AccountType,
     CommunityComment,
     CommunityGroup,
     CommunityMembership,
@@ -203,7 +211,9 @@ async def get_group(group_id: UUID, user: User = Depends(get_current_user), db: 
 
 @router.post("/groups", response_model=CommunityGroupRead, status_code=status.HTTP_201_CREATED)
 async def create_group(
-    body: CommunityGroupCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    body: CommunityGroupCreate,
+    user: User = Depends(require_account_type(AccountType.COMPANY, AccountType.SERVICE_PROVIDER)),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     group = CommunityGroup(group_type=body.group_type, name=body.name, description=body.description)
     db.add(group)

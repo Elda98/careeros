@@ -34,9 +34,16 @@
     --surface-foreground: 210 40% 98%;
     --surface-hover: 248 45% 13%;
 
-    --sidebar: 246 78% 4%;
+    /* Bug found by actually looking at the deployed UI (not caught by any
+       automated check): at 246 78% 4%, this was only 1 lightness point off
+       --background's 5% — visually indistinguishable, reading as "no
+       sidebar" even though the DOM/layout was correct. Matched to
+       --surface/--card's already-proven-visible 9% instead of inventing a
+       new value — the same "reuse what already works" principle as the
+       rest of this token system. */
+    --sidebar: 248 55% 9%;
     --sidebar-foreground: 240 8% 68%;
-    --sidebar-active: 248 45% 15%;
+    --sidebar-active: 248 45% 18%;
     --sidebar-active-foreground: 210 40% 98%;
 
     --card: 248 55% 9%;
@@ -104,7 +111,9 @@
     --surface-foreground: 262 30% 14%;
     --surface-hover: 20 40% 95%;
 
-    --sidebar: 25 40% 96%;
+    /* Same fix as the dark theme's --sidebar, same reason: 96% was only 1
+       point off --background's 97%, effectively invisible. */
+    --sidebar: 25 35% 92%;
     --sidebar-foreground: 262 15% 35%;
     --sidebar-active: 262 30% 91%;
     --sidebar-active-foreground: 262 40% 20%;
