@@ -592,3 +592,108 @@ class InterviewAnswer(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     question: Mapped[InterviewQuestion] = relationship(back_populates="answer")
+
+
+# --- Community — shared across every persona (Student/Graduate/Company/
+# Service Provider), not scoped to one account type: "المجتمع مشترك بين
+# المستخدمين وليس نوع حساب" (the product workflow's own words). Group
+# creation is self-serve (any authenticated user), the same pattern already
+# used for JobOpportunity/ServiceListing — no admin/moderation panel exists,
+# matching this module's real, honest scope. Per ADR-001
+# (docs/00-Architecture-Decisions/), this is deliberately the *safe* half
+# of "Professional Community": explicit, user-initiated browse/join/post,
+# never system-inferred peer-matching (ADR-001's own suggested resolution
+# path — matching users on Goal/field without a direct request is the part
+# left unscoped, and nothing here does that).
+
+
+class CommunityGroupType(str, enum.Enum):
+    GENERAL = "general"
+    MAJOR = "major"
+    UNIVERSITY = "university"
+    COLLEGE = "college"
+    DEPARTMENT = "department"
+    SKILL = "skill"
+    GOAL = "goal"
+    OPPORTUNITIES_EVENTS = "opportunities_events"
+
+
+class CommunityPostType(str, enum.Enum):
+    GENERAL = "general"
+    QUESTION = "question"
+    EXPERIENCE = "experience"
+    PROJECT = "project"
+
+
+class CommunityGroup(Base):
+    __tablename__ = "community_groups"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    group_type: Mapped[CommunityGroupType] = mapped_column(Enum(CommunityGroupType), nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    posts: Mapped[list[CommunityPost]] = relationship(back_populates="group", cascade="all, delete-orphan")
+    memberships: Mapped[list[CommunityMembership]] = relationship(back_populates="group", cascade="all, delete-orphan")
+
+
+class CommunityMembership(Base):
+    __tablename__ = "community_memberships"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    group_id: Mapped[uuid.UUID] = _uuid_fk("community_groups.id", nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = _uuid_fk("users.id", nullable=False, index=True)
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    group: Mapped[CommunityGroup] = relationship(back_populates="memberships")
+
+    __table_args__ = (UniqueConstraint("group_id", "user_id", name="uq_community_membership_group_user"),)
+
+
+class CommunityPost(Base):
+    __tablename__ = "community_posts"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    group_id: Mapped[uuid.UUID] = _uuid_fk("community_groups.id", nullable=False, index=True)
+    author_id: Mapped[uuid.UUID] = _uuid_fk("users.id", nullable=False, index=True)
+    post_type: Mapped[CommunityPostType] = mapped_column(Enum(CommunityPostType), default=CommunityPostType.GENERAL)
+    title: Mapped[str] = mapped_column(String, default="")
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    group: Mapped[CommunityGroup] = relationship(back_populates="posts")
+    author: Mapped[User] = relationship()
+    comments: Mapped[list[CommunityComment]] = relationship(back_populates="post", cascade="all, delete-orphan")
+    reactions: Mapped[list[CommunityReaction]] = relationship(back_populates="post", cascade="all, delete-orphan")
+
+
+class CommunityComment(Base):
+    __tablename__ = "community_comments"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    post_id: Mapped[uuid.UUID] = _uuid_fk("community_posts.id", nullable=False, index=True)
+    author_id: Mapped[uuid.UUID] = _uuid_fk("users.id", nullable=False, index=True)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    post: Mapped[CommunityPost] = relationship(back_populates="comments")
+    author: Mapped[User] = relationship()
+
+
+class CommunityReaction(Base):
+    """A single "like"-style reaction — deliberately one reaction type, not
+    a reaction-picker, matching the product workflow's own minimal
+    "تفاعل" (interact) verb rather than inventing an emoji-reaction system
+    nobody asked for."""
+
+    __tablename__ = "community_reactions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    post_id: Mapped[uuid.UUID] = _uuid_fk("community_posts.id", nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = _uuid_fk("users.id", nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    post: Mapped[CommunityPost] = relationship(back_populates="reactions")
+
+    __table_args__ = (UniqueConstraint("post_id", "user_id", name="uq_community_reaction_post_user"),)

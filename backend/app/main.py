@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import (
     account,
     ai_career_center,
+    community,
     dashboard,
     health,
     interview,
@@ -46,6 +47,7 @@ app.include_router(services.router)
 app.include_router(profiles.router)
 app.include_router(ai_career_center.router)
 app.include_router(interview.router)
+app.include_router(community.router)
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
 app.include_router(settings.router)

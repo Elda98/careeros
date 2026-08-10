@@ -396,3 +396,76 @@ export interface InterviewSessionReportRead {
   completed_at: string | null;
   voice_summary: VoiceSummaryRead | null;
 }
+
+export type CommunityGroupType =
+  | "general"
+  | "major"
+  | "university"
+  | "college"
+  | "department"
+  | "skill"
+  | "goal"
+  | "opportunities_events";
+export type CommunityPostType = "general" | "question" | "experience" | "project";
+
+export interface CommunityGroupCreate {
+  group_type: CommunityGroupType;
+  name: string;
+  description?: string;
+}
+
+export interface CommunityGroupRead {
+  id: string;
+  group_type: CommunityGroupType;
+  name: string;
+  description: string;
+  created_at: string;
+  member_count: number;
+  post_count: number;
+  is_member: boolean;
+}
+
+export interface CommunityAuthorRead {
+  user_id: string;
+  display_label: string;
+}
+
+export interface CommunityPostCreate {
+  post_type?: CommunityPostType;
+  title?: string;
+  body: string;
+}
+
+export interface CommunityPostRead {
+  id: string;
+  group_id: string;
+  post_type: CommunityPostType;
+  title: string;
+  body: string;
+  created_at: string;
+  author: CommunityAuthorRead;
+  comment_count: number;
+  reaction_count: number;
+  user_has_reacted: boolean;
+}
+
+export interface CommunityCommentCreate {
+  body: string;
+}
+
+export interface CommunityCommentRead {
+  id: string;
+  post_id: string;
+  body: string;
+  created_at: string;
+  author: CommunityAuthorRead;
+}
+
+export interface CommunityPostDetailRead extends CommunityPostRead {
+  comments: CommunityCommentRead[];
+}
+
+export interface CommunityReactionToggleRead {
+  reacted: boolean;
+  reaction_count: number;
+}

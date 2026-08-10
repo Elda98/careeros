@@ -45,6 +45,7 @@
     "interview": "التدريب على المقابلات",
     "opportunities": "الفرص",
     "services": "الخدمات",
+    "community": "المجتمع",
     "cvFeedback": "تقييم السيرة الذاتية",
     "notifications": "الإشعارات",
     "progress": "التقدم",
@@ -692,6 +693,59 @@
       "volume": "الصوت النسبي",
       "movement": "مستوى الحركة",
       "summaryTitle": "مؤشرات الصوت والأداء"
+    }
+  },
+  "community": {
+    "title": "المجتمع",
+    "subtitle": "مشترك بين جميع أنواع حسابات Orbit — اطرح الأسئلة، شارك تجاربك ومشاريعك، وتواصل حول ما تعمل عليه فعليًا.",
+    "allCommunities": "كل المجتمعات",
+    "createNew": "مجتمع جديد",
+    "noCommunitiesYet": "لا توجد مجتمعات بعد — كن أول من يبدأ واحدًا.",
+    "memberCount": "{{count}} عضو",
+    "postCount": "{{count}} منشور",
+    "join": "انضمام",
+    "leave": "مغادرة",
+    "actionError": "حدث خطأ ما",
+    "loadError": "تعذّر تحميل هذا المجتمع",
+    "backToList": "العودة إلى المجتمع",
+    "backToGroup": "العودة إلى المجتمع",
+    "posts": "المنشورات",
+    "newPost": "منشور جديد",
+    "joinToPost": "انضم لهذا المجتمع للنشر والتعليق والتفاعل.",
+    "noPostsYet": "لا توجد منشورات بعد — كن أول من يشارك شيئًا.",
+    "commentError": "تعذّر نشر تعليقك",
+    "reactionCount": "{{count}}",
+    "commentCount": "{{count}} تعليقات",
+    "groupType": {
+      "general": "عام",
+      "major": "التخصص",
+      "university": "الجامعة",
+      "college": "الكلية",
+      "department": "القسم",
+      "skill": "المهارة",
+      "goal": "الهدف المهني",
+      "opportunitiesEvents": "الفرص والفعاليات"
+    },
+    "postType": {
+      "general": "نقاش",
+      "question": "سؤال",
+      "experience": "تجربة",
+      "project": "مشروع"
+    },
+    "form": {
+      "nameLabel": "اسم المجتمع",
+      "namePlaceholder": "مثال: مهندسو الأنظمة الخلفية",
+      "typeLabel": "الفئة",
+      "descriptionLabel": "الوصف (اختياري)",
+      "descriptionPlaceholder": "ما موضوع هذا المجتمع؟",
+      "submit": "إنشاء المجتمع",
+      "error": "تعذّر إنشاء هذا المجتمع",
+      "postTypeLabel": "نوع المنشور",
+      "postTitleLabel": "العنوان (اختياري)",
+      "postBodyLabel": "ما الذي يدور في ذهنك؟",
+      "postSubmit": "نشر",
+      "commentPlaceholder": "اكتب تعليقًا...",
+      "commentSubmit": "تعليق"
     }
   }
 }

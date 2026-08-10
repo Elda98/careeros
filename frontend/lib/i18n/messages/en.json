@@ -45,6 +45,7 @@
     "interview": "Interview Prep",
     "opportunities": "Opportunities",
     "services": "Services",
+    "community": "Community",
     "cvFeedback": "CV Feedback",
     "notifications": "Notifications",
     "progress": "Progress",
@@ -692,6 +693,59 @@
       "volume": "Relative volume",
       "movement": "Movement level",
       "summaryTitle": "Voice & delivery signals"
+    }
+  },
+  "community": {
+    "title": "Community",
+    "subtitle": "Shared across every Orbit persona — ask questions, share experiences and projects, and connect around what you're actually working on.",
+    "allCommunities": "All communities",
+    "createNew": "New community",
+    "noCommunitiesYet": "No communities yet — start the first one.",
+    "memberCount": "{{count}} members",
+    "postCount": "{{count}} posts",
+    "join": "Join",
+    "leave": "Leave",
+    "actionError": "Something went wrong",
+    "loadError": "Couldn't load this community",
+    "backToList": "Back to Community",
+    "backToGroup": "Back to community",
+    "posts": "Posts",
+    "newPost": "New post",
+    "joinToPost": "Join this community to post, comment, and react.",
+    "noPostsYet": "No posts yet — be the first to share something.",
+    "commentError": "Couldn't post your comment",
+    "reactionCount": "{{count}}",
+    "commentCount": "{{count}} comments",
+    "groupType": {
+      "general": "General",
+      "major": "Major",
+      "university": "University",
+      "college": "College",
+      "department": "Department",
+      "skill": "Skill",
+      "goal": "Career goal",
+      "opportunitiesEvents": "Opportunities & events"
+    },
+    "postType": {
+      "general": "Discussion",
+      "question": "Question",
+      "experience": "Experience",
+      "project": "Project"
+    },
+    "form": {
+      "nameLabel": "Community name",
+      "namePlaceholder": "e.g. Backend Engineers",
+      "typeLabel": "Category",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "What is this community about?",
+      "submit": "Create community",
+      "error": "Couldn't create this community",
+      "postTypeLabel": "Post type",
+      "postTitleLabel": "Title (optional)",
+      "postBodyLabel": "What's on your mind?",
+      "postSubmit": "Post",
+      "commentPlaceholder": "Write a comment...",
+      "commentSubmit": "Comment"
     }
   }
 }
