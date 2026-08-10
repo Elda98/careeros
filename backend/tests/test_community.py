@@ -31,8 +31,88 @@ def _create_group(client: TestClient, *, name: str = "Backend Engineers") -> dic
 def test_creating_a_group_auto_joins_the_creator(client: TestClient) -> None:
     group = _create_group(client)
     assert group["is_member"] is True
+    assert group["is_owner"] is True
     assert group["member_count"] == 1
     assert group["post_count"] == 0
+
+
+def test_only_the_owner_can_edit_the_group(client: TestClient) -> None:
+    group = _create_group(client)
+
+    update = client.patch(f"/community/groups/{group['id']}", json={"name": "Renamed", "description": "New desc."})
+    assert update.status_code == 200
+    assert update.json()["name"] == "Renamed"
+
+    try:
+        _as(OTHER_USER_CLERK_ID)
+        client.post(f"/community/groups/{group['id']}/join")
+        forbidden = client.patch(f"/community/groups/{group['id']}", json={"name": "Hijacked"})
+        assert forbidden.status_code == 403
+    finally:
+        _reset()
+
+
+def test_owner_can_delete_another_members_post_but_a_regular_member_cannot(client: TestClient) -> None:
+    group = _create_group(client)
+
+    try:
+        _as(OTHER_USER_CLERK_ID)
+        client.post(f"/community/groups/{group['id']}/join")
+        post = client.post(f"/community/groups/{group['id']}/posts", json={"body": "A post by a regular member."}).json()
+    finally:
+        _reset()
+
+    # The owner (TEST_CLERK_USER_ID) can moderate — delete someone else's post.
+    assert client.delete(f"/community/posts/{post['id']}").status_code == 204
+
+
+def test_regular_member_cannot_delete_someone_elses_post(client: TestClient) -> None:
+    group = _create_group(client)
+    owner_post = client.post(f"/community/groups/{group['id']}/posts", json={"body": "Owner's post."}).json()
+
+    try:
+        _as(OTHER_USER_CLERK_ID)
+        client.post(f"/community/groups/{group['id']}/join")
+        assert client.delete(f"/community/posts/{owner_post['id']}").status_code == 403
+    finally:
+        _reset()
+
+
+def test_owner_can_remove_a_member_but_not_themselves(client: TestClient) -> None:
+    group = _create_group(client)
+
+    # No dedicated "list members" endpoint exists yet, so capture the other
+    # member's user_id the same way the other tests above do: from a post
+    # they author.
+    try:
+        _as(OTHER_USER_CLERK_ID)
+        client.post(f"/community/groups/{group['id']}/join")
+        post = client.post(f"/community/groups/{group['id']}/posts", json={"body": "hi"}).json()
+        other_user_id = post["author"]["user_id"]
+    finally:
+        _reset()
+
+    assert client.get(f"/community/groups/{group['id']}").json()["member_count"] == 2
+    removed = client.delete(f"/community/groups/{group['id']}/members/{other_user_id}")
+    assert removed.status_code == 204
+    assert client.get(f"/community/groups/{group['id']}").json()["member_count"] == 1
+
+    owner_id = client.post(f"/community/groups/{group['id']}/posts", json={"body": "hi2"}).json()["author"]["user_id"]
+    self_removal = client.delete(f"/community/groups/{group['id']}/members/{owner_id}")
+    assert self_removal.status_code == 400
+
+
+def test_non_owner_cannot_remove_a_member(client: TestClient) -> None:
+    group = _create_group(client)
+    try:
+        _as(OTHER_USER_CLERK_ID)
+        client.post(f"/community/groups/{group['id']}/join")
+        post = client.post(f"/community/groups/{group['id']}/posts", json={"body": "hi"}).json()
+        other_user_id = post["author"]["user_id"]
+        forbidden = client.delete(f"/community/groups/{group['id']}/members/{other_user_id}")
+        assert forbidden.status_code == 403
+    finally:
+        _reset()
 
 
 def test_get_single_group_reflects_membership_per_caller(client: TestClient) -> None:

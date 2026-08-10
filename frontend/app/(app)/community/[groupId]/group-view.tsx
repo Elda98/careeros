@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { AlertCircle, Heart, MessageCircle, Plus, Users } from "lucide-react";
+import { AlertCircle, Heart, MessageCircle, Pencil, Plus, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -48,6 +48,7 @@ export function GroupView({
   const [group, setGroup] = useState(initialGroup);
   const [posts, setPosts] = useState(initialPosts);
   const [showForm, setShowForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [membershipBusy, setMembershipBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -97,6 +98,17 @@ export function GroupView({
     }
   }
 
+  async function moderateDeletePost(post: CommunityPostRead) {
+    setActionError(null);
+    try {
+      await withAuth(`/community/posts/${post.id}`, { method: "DELETE" });
+      setPosts((prev) => prev.filter((p) => p.id !== post.id));
+      setGroup((prev) => (prev ? { ...prev, post_count: Math.max(0, prev.post_count - 1) } : prev));
+    } catch (e) {
+      setActionError(e instanceof Error ? extractApiErrorMessage(e.message) : t("community.actionError"));
+    }
+  }
+
   return (
     <>
       <Link href="/community" className="text-small font-medium text-primary hover:underline">
@@ -107,6 +119,7 @@ export function GroupView({
         <div>
           <h1 className="text-title text-foreground">{group.name}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-caption text-muted-foreground">
+            {group.is_owner && <Badge variant="primary">{t("community.owner")}</Badge>}
             <Badge variant="outline">{t(GROUP_TYPE_KEY[group.group_type])}</Badge>
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3" aria-hidden="true" />
@@ -116,10 +129,29 @@ export function GroupView({
           </p>
           {group.description && <p className="mt-2 text-small text-foreground">{group.description}</p>}
         </div>
-        <Button variant={group.is_member ? "outline" : "default"} onClick={toggleMembership} isLoading={membershipBusy}>
-          {group.is_member ? t("community.leave") : t("community.join")}
-        </Button>
+        <div className="flex items-center gap-2">
+          {group.is_owner && (
+            <Button variant="outline" size="sm" onClick={() => setShowEditForm((v) => !v)}>
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              {t("community.edit")}
+            </Button>
+          )}
+          <Button variant={group.is_member ? "outline" : "default"} onClick={toggleMembership} isLoading={membershipBusy}>
+            {group.is_member ? t("community.leave") : t("community.join")}
+          </Button>
+        </div>
       </div>
+
+      {showEditForm && (
+        <EditGroupForm
+          group={group}
+          withAuth={withAuth}
+          onSaved={(updated) => {
+            setGroup(updated);
+            setShowEditForm(false);
+          }}
+        />
+      )}
 
       {actionError && (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
@@ -186,12 +218,84 @@ export function GroupView({
                   <MessageCircle className="h-4 w-4" aria-hidden="true" />
                   {post.comment_count}
                 </Link>
+                {group.is_owner && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => moderateDeletePost(post)}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    {t("community.moderateDelete")}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
     </>
+  );
+}
+
+function EditGroupForm({
+  group,
+  withAuth,
+  onSaved,
+}: {
+  group: CommunityGroupRead;
+  withAuth: <T>(path: string, init?: RequestInit) => Promise<T>;
+  onSaved: (group: CommunityGroupRead) => void;
+}) {
+  const { t } = useTranslations();
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const updated = await withAuth<CommunityGroupRead>(`/community/groups/${group.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name, description }),
+      });
+      onSaved(updated);
+    } catch (e) {
+      setError(e instanceof Error ? extractApiErrorMessage(e.message) : t("community.form.error"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card className="mt-4 animate-fade-in">
+      <CardContent className="space-y-4 pt-6">
+        {error && (
+          <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+            <p className="text-small text-foreground">{error}</p>
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <Label htmlFor="eg-name">{t("community.form.nameLabel")}</Label>
+          <Input id="eg-name" value={name} onChange={(e) => setName(e.target.value)} disabled={submitting} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="eg-description">{t("community.form.descriptionLabel")}</Label>
+          <Textarea
+            id="eg-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={submitting}
+          />
+        </div>
+        <Button onClick={handleSave} disabled={submitting || !name.trim()} isLoading={submitting}>
+          {t("community.form.save")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

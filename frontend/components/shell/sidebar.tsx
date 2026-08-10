@@ -6,9 +6,8 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { Logo } from "@/components/logo";
-import { NAV_ITEMS } from "@/components/shell/nav-config";
+import { NAV_GROUPS } from "@/components/shell/nav-config";
 import { Button } from "@/components/ui/button";
-import { BRAND } from "@/lib/brand";
 import { useTranslations } from "@/lib/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
@@ -68,33 +67,42 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-          {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onMobileClose}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-full px-3 py-2 text-small font-medium transition-colors duration-150",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  active
-                    ? "bg-sidebar-active text-sidebar-active-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-active/60 hover:text-sidebar-active-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {t(item.labelKey)}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-2">
+          {NAV_GROUPS.map((group, groupIndex) => (
+            <div key={group.labelKey ?? `group-${groupIndex}`} className="space-y-0.5">
+              {group.labelKey && (
+                <p className="px-3 pb-1 pt-2 text-caption font-semibold uppercase tracking-wide text-sidebar-foreground/60">
+                  {t(group.labelKey)}
+                </p>
+              )}
+              {group.items.map((item) => {
+                const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onMobileClose}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-full px-3 py-2 text-small font-medium transition-colors duration-150",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      active
+                        ? "bg-sidebar-active text-sidebar-active-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-active/60 hover:text-sidebar-active-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {t(item.labelKey)}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="border-t border-border-subtle px-4 py-3">
-          <p className="text-caption text-muted-foreground">{BRAND.name} · Phase 0</p>
+          <p className="text-caption text-muted-foreground">{t("nav.tagline")}</p>
         </div>
       </aside>
     </>

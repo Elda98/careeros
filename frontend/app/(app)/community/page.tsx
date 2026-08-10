@@ -4,7 +4,8 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
-import type { CommunityGroupRead } from "@/lib/types";
+import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
+import type { CommunityGroupRead, GoalRead, ProfileRead } from "@/lib/types";
 
 import { CommunityView } from "./community-view";
 
@@ -36,7 +37,16 @@ async function CommunityContent({ token }: { token: string }) {
     error = e instanceof Error ? e.message : "Failed to load communities";
   }
 
-  return <CommunityView initialGroups={groups} error={error} />;
+  // Best-effort, real (not fake) recommendation input — matched against
+  // group name/description client-side in CommunityView. Failing to load
+  // either just means no recommendations show, never an error for the
+  // page as a whole.
+  const [goal, profile] = await Promise.all([
+    fetchOptionalSection<GoalRead>("/profile/goals/active", token),
+    fetchSection<ProfileRead>("/profile", token),
+  ]);
+
+  return <CommunityView initialGroups={groups} error={error} goal={goal.data} profile={profile.data} />;
 }
 
 function CommunitySkeleton() {

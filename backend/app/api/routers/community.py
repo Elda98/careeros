@@ -5,6 +5,20 @@ ServiceListing); browsing is open to any authenticated user; posting/
 commenting/reacting requires having joined the group first (an explicit,
 user-initiated action — see models.py's own ADR-001 note on why this is
 the safe half of "Professional Community").
+
+Ownership/moderation model: a normal member is NOT an administrator of
+the platform's Community feature, but the person who creates a specific
+group IS that group's owner — the same scoped, standard pattern as a
+Discord server owner or subreddit moderator, not a platform-wide admin
+role (which this product has no other concept of, and inventing one for
+Community alone would be out of proportion). Ownership is deliberately
+*derived*, not a stored column: the owner is whichever member's
+`CommunityMembership.joined_at` is earliest for that group — always the
+creator, since `create_group` inserts their membership in the same
+transaction as the group itself, before anyone else could possibly join.
+This needed no new migration. Owners can edit their group and delete any
+post/comment within it (moderation); every other member can only delete
+their own content.
 """
 
 from __future__ import annotations
@@ -29,6 +43,7 @@ from app.schemas.community import (
     CommunityCommentCreate,
     CommunityGroupCreate,
     CommunityGroupRead,
+    CommunityGroupUpdate,
     CommunityPostCreate,
     CommunityPostDetailRead,
     CommunityPostRead,
@@ -94,6 +109,22 @@ async def _get_group(db: AsyncSession, group_id: UUID) -> CommunityGroup:
     return group
 
 
+async def _group_owner_id(db: AsyncSession, group_id: UUID) -> UUID | None:
+    result = await db.execute(
+        select(CommunityMembership.user_id)
+        .where(CommunityMembership.group_id == group_id)
+        .order_by(CommunityMembership.joined_at.asc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _require_owner(db: AsyncSession, user: User, group_id: UUID) -> None:
+    owner_id = await _group_owner_id(db, group_id)
+    if owner_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only this community's owner can do that.")
+
+
 async def _group_read(db: AsyncSession, group: CommunityGroup, viewer_id: UUID) -> dict:
     member_count = await db.execute(
         select(func.count()).select_from(CommunityMembership).where(CommunityMembership.group_id == group.id)
@@ -102,6 +133,7 @@ async def _group_read(db: AsyncSession, group: CommunityGroup, viewer_id: UUID) 
     is_member = await db.execute(
         select(CommunityMembership).where(CommunityMembership.group_id == group.id, CommunityMembership.user_id == viewer_id)
     )
+    owner_id = await _group_owner_id(db, group.id)
     return {
         "id": group.id,
         "group_type": group.group_type,
@@ -111,6 +143,7 @@ async def _group_read(db: AsyncSession, group: CommunityGroup, viewer_id: UUID) 
         "member_count": member_count.scalar_one(),
         "post_count": post_count.scalar_one(),
         "is_member": is_member.scalar_one_or_none() is not None,
+        "is_owner": owner_id == viewer_id,
     }
 
 
@@ -132,6 +165,20 @@ async def list_groups(user: User = Depends(get_current_user), db: AsyncSession =
     my_memberships = await db.execute(select(CommunityMembership.group_id).where(CommunityMembership.user_id == user.id))
     my_group_ids = {row[0] for row in my_memberships.all()}
 
+    # Earliest membership per group == that group's owner (see module
+    # docstring) — one query for the whole list, not N+1.
+    earliest = (
+        select(
+            CommunityMembership.group_id,
+            CommunityMembership.user_id,
+            func.row_number()
+            .over(partition_by=CommunityMembership.group_id, order_by=CommunityMembership.joined_at.asc())
+            .label("rn"),
+        ).subquery()
+    )
+    owners_result = await db.execute(select(earliest.c.group_id, earliest.c.user_id).where(earliest.c.rn == 1))
+    owner_by_group = {row.group_id: row.user_id for row in owners_result}
+
     return [
         {
             "id": group.id,
@@ -142,6 +189,7 @@ async def list_groups(user: User = Depends(get_current_user), db: AsyncSession =
             "member_count": member_count,
             "post_count": post_count,
             "is_member": group.id in my_group_ids,
+            "is_owner": owner_by_group.get(group.id) == user.id,
         }
         for group, member_count, post_count in rows
     ]
@@ -174,7 +222,27 @@ async def create_group(
         "member_count": 1,
         "post_count": 0,
         "is_member": True,
+        "is_owner": True,
     }
+
+
+@router.patch("/groups/{group_id}", response_model=CommunityGroupRead)
+async def update_group(
+    group_id: UUID,
+    body: CommunityGroupUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    group = await _get_group(db, group_id)
+    await _require_owner(db, user, group_id)
+    if body.name is not None:
+        group.name = body.name
+    if body.description is not None:
+        group.description = body.description
+    db.add(group)
+    await db.commit()
+    await db.refresh(group)
+    return await _group_read(db, group, user.id)
 
 
 @router.post("/groups/{group_id}/join", status_code=status.HTTP_204_NO_CONTENT)
@@ -197,6 +265,31 @@ async def leave_group(group_id: UUID, user: User = Depends(get_current_user), db
     if membership is not None:
         await db.delete(membership)
         await db.commit()
+
+
+@router.delete("/groups/{group_id}/members/{member_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_member(
+    group_id: UUID,
+    member_user_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    await _get_group(db, group_id)
+    await _require_owner(db, user, group_id)
+    if member_user_id == user.id:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "The owner can't remove themselves — leave via the normal leave action instead."
+        )
+    result = await db.execute(
+        select(CommunityMembership).where(
+            CommunityMembership.group_id == group_id, CommunityMembership.user_id == member_user_id
+        )
+    )
+    membership = result.scalar_one_or_none()
+    if membership is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "This user is not a member of this community.")
+    await db.delete(membership)
+    await db.commit()
 
 
 @router.get("/groups/{group_id}/posts", response_model=list[CommunityPostRead])
@@ -299,9 +392,15 @@ async def delete_post(post_id: UUID, user: User = Depends(get_current_user), db:
     # A 403 here, not the IDOR-safe 404 pattern used for private
     # ownership-scoped resources elsewhere: this post's existence is
     # already public (visible to any group member via GET), so there is
-    # nothing to hide — "not your post" is the honest response.
+    # nothing to hide — "not your post or you don't moderate this
+    # community" is the honest response. Author OR the group's owner may
+    # delete — moderation, not just self-service cleanup.
     if post.author_id != user.id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only delete your own posts.")
+        owner_id = await _group_owner_id(db, post.group_id)
+        if owner_id != user.id:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, "You can only delete your own posts, or posts in a community you own."
+            )
     await db.delete(post)
     await db.commit()
 
@@ -310,11 +409,17 @@ async def delete_post(post_id: UUID, user: User = Depends(get_current_user), db:
 async def delete_comment(
     comment_id: UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> None:
-    result = await db.execute(select(CommunityComment).where(CommunityComment.id == comment_id))
+    result = await db.execute(
+        select(CommunityComment).where(CommunityComment.id == comment_id).options(selectinload(CommunityComment.post))
+    )
     comment = result.scalar_one_or_none()
     if comment is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Comment not found")
     if comment.author_id != user.id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only delete your own comments.")
+        owner_id = await _group_owner_id(db, comment.post.group_id)
+        if owner_id != user.id:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, "You can only delete your own comments, or comments in a community you own."
+            )
     await db.delete(comment)
     await db.commit()

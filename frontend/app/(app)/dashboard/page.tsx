@@ -5,7 +5,19 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
 import { destinationForAccountType } from "@/lib/role-routing";
-import type { AccountTypeRead, DashboardRead, OnboardingStatusRead } from "@/lib/types";
+import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
+import type {
+  AccountTypeRead,
+  CommunityGroupRead,
+  DashboardRead,
+  GoalRead,
+  InterviewSessionRead,
+  JobOpportunityWithCompanyRead,
+  NotificationRead,
+  OnboardingStatusRead,
+  RenewalRecapRead,
+  SkillGapAnalysisRead,
+} from "@/lib/types";
 
 import { DashboardView } from "./dashboard-view";
 
@@ -100,7 +112,35 @@ async function DashboardContent({ token }: { token: string }) {
     error = e instanceof Error ? e.message : "Failed to load dashboard";
   }
 
-  return <DashboardView dashboard={dashboard} error={error} />;
+  // Everything below is best-effort context that turns Home into an
+  // actual summary of where the user stands — not the one required
+  // next-action fetch above, which alone still renders. Each section
+  // fails independently (same pattern as Progress), and every value
+  // comes from an endpoint that already existed for a different page —
+  // no new backend logic, no duplicated data collection.
+  const [goal, analysis, recap, notifications, interviewSessions, communityGroups, opportunities] = await Promise.all([
+    fetchOptionalSection<GoalRead>("/profile/goals/active", token),
+    fetchOptionalSection<SkillGapAnalysisRead>("/ai-career-center/skill-gap-analysis/current", token),
+    fetchSection<RenewalRecapRead>("/settings/renewal-recap", token),
+    fetchSection<NotificationRead[]>("/notifications", token),
+    fetchSection<InterviewSessionRead[]>("/interview/sessions", token),
+    fetchSection<CommunityGroupRead[]>("/community/groups", token),
+    fetchSection<JobOpportunityWithCompanyRead[]>("/opportunities", token),
+  ]);
+
+  return (
+    <DashboardView
+      dashboard={dashboard}
+      error={error}
+      goal={goal.data}
+      analysis={analysis.data}
+      recap={recap.data}
+      recentNotifications={(notifications.data ?? []).slice(0, 3)}
+      interviewSessions={interviewSessions.data ?? []}
+      myCommunityGroups={(communityGroups.data ?? []).filter((g) => g.is_member)}
+      openOpportunitiesCount={(opportunities.data ?? []).length}
+    />
+  );
 }
 
 function DashboardSkeleton() {

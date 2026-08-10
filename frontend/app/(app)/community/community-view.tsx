@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { AlertCircle, Plus, Users } from "lucide-react";
+import { AlertCircle, Plus, Sparkles, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch, extractApiErrorMessage } from "@/lib/api";
 import { useTranslations } from "@/lib/i18n/locale-provider";
-import type { CommunityGroupRead, CommunityGroupType } from "@/lib/types";
+import type { CommunityGroupRead, CommunityGroupType, GoalRead, ProfileRead } from "@/lib/types";
 
 const GROUP_TYPE_KEY: Record<CommunityGroupType, string> = {
   general: "community.groupType.general",
@@ -26,7 +26,38 @@ const GROUP_TYPE_KEY: Record<CommunityGroupType, string> = {
   opportunities_events: "community.groupType.opportunitiesEvents",
 };
 
-export function CommunityView({ initialGroups, error }: { initialGroups: CommunityGroupRead[]; error: string | null }) {
+// Display order for the "browse by category" sections — general first
+// (the widest audience), then progressively narrower/more specific.
+const GROUP_TYPE_ORDER: CommunityGroupType[] = [
+  "general",
+  "major",
+  "university",
+  "college",
+  "department",
+  "skill",
+  "goal",
+  "opportunities_events",
+];
+
+function matchesInterest(group: CommunityGroupRead, goal: GoalRead | null, profile: ProfileRead | null): boolean {
+  const haystack = `${group.name} ${group.description}`.toLowerCase();
+  const needles = [goal?.target_role, goal?.target_field, ...(profile?.skills ?? [])]
+    .filter((n): n is string => typeof n === "string" && n.length > 2)
+    .map((n) => n.toLowerCase());
+  return needles.some((n) => haystack.includes(n));
+}
+
+export function CommunityView({
+  initialGroups,
+  error,
+  goal,
+  profile,
+}: {
+  initialGroups: CommunityGroupRead[];
+  error: string | null;
+  goal: GoalRead | null;
+  profile: ProfileRead | null;
+}) {
   const { t } = useTranslations();
   const { getToken } = useAuth();
 
@@ -34,6 +65,21 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
   const [showForm, setShowForm] = useState(false);
   const [busyGroupId, setBusyGroupId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const myGroups = useMemo(() => groups.filter((g) => g.is_member), [groups]);
+  const recommended = useMemo(
+    () => groups.filter((g) => !g.is_member && matchesInterest(g, goal, profile)),
+    [groups, goal, profile],
+  );
+  const byType = useMemo(() => {
+    const map = new Map<CommunityGroupType, CommunityGroupRead[]>();
+    for (const g of groups) {
+      const list = map.get(g.group_type) ?? [];
+      list.push(g);
+      map.set(g.group_type, list);
+    }
+    return map;
+  }, [groups]);
 
   async function withAuth<T>(path: string, init: RequestInit = {}): Promise<T> {
     const token = await getToken();
@@ -61,8 +107,16 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
 
   return (
     <>
-      <h1 className="text-title text-foreground">{t("community.title")}</h1>
-      <p className="mt-1 text-small text-muted-foreground">{t("community.subtitle")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-title text-foreground">{t("community.title")}</h1>
+          <p className="mt-1 text-small text-muted-foreground">{t("community.subtitle")}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {t("community.createNew")}
+        </Button>
+      </div>
 
       {(error || actionError) && (
         <div className="mt-4 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
@@ -70,14 +124,6 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
           <p className="text-small text-foreground">{error ?? actionError}</p>
         </div>
       )}
-
-      <div className="mt-6 flex items-center justify-between">
-        <h2 className="text-heading text-foreground">{t("community.allCommunities")}</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowForm((v) => !v)}>
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          {t("community.createNew")}
-        </Button>
-      </div>
 
       {showForm && (
         <CreateGroupForm
@@ -89,8 +135,77 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
         />
       )}
 
-      <div className="mt-4 space-y-3">
-        {groups.length === 0 && !showForm && <p className="text-small text-muted-foreground">{t("community.noCommunitiesYet")}</p>}
+      {myGroups.length > 0 && (
+        <GroupSection
+          title={t("community.myCommunities")}
+          icon={Users}
+          groups={myGroups}
+          busyGroupId={busyGroupId}
+          onToggleMembership={toggleMembership}
+          t={t}
+        />
+      )}
+
+      {recommended.length > 0 && (
+        <GroupSection
+          title={t("community.recommendedForYou")}
+          icon={Sparkles}
+          groups={recommended}
+          busyGroupId={busyGroupId}
+          onToggleMembership={toggleMembership}
+          t={t}
+        />
+      )}
+
+      <div className="mt-8">
+        <h2 className="text-heading text-foreground">{t("community.browseByCategory")}</h2>
+        {groups.length === 0 && !showForm && (
+          <p className="mt-3 text-small text-muted-foreground">{t("community.noCommunitiesYet")}</p>
+        )}
+        {GROUP_TYPE_ORDER.map((groupType) => {
+          const list = byType.get(groupType);
+          if (!list || list.length === 0) return null;
+          return (
+            <GroupSection
+              key={groupType}
+              title={t(GROUP_TYPE_KEY[groupType])}
+              groups={list}
+              busyGroupId={busyGroupId}
+              onToggleMembership={toggleMembership}
+              t={t}
+              compact
+            />
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+function GroupSection({
+  title,
+  icon: Icon,
+  groups,
+  busyGroupId,
+  onToggleMembership,
+  t,
+  compact,
+}: {
+  title: string;
+  icon?: LucideIcon;
+  groups: CommunityGroupRead[];
+  busyGroupId: string | null;
+  onToggleMembership: (group: CommunityGroupRead) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={compact ? "mt-5" : "mt-6"}>
+      <h3 className="mb-3 flex items-center gap-1.5 text-small font-medium text-foreground">
+        {Icon && <Icon className="h-4 w-4 text-primary" aria-hidden="true" />}
+        {title}
+      </h3>
+      <div className="space-y-3">
         {groups.map((group) => (
           <Card key={group.id} className="animate-fade-in">
             <CardHeader className="flex-row items-start justify-between space-y-0">
@@ -99,7 +214,7 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
                   {group.name}
                 </Link>
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-caption text-muted-foreground">
-                  <Badge variant="outline">{t(GROUP_TYPE_KEY[group.group_type])}</Badge>
+                  {group.is_owner && <Badge variant="primary">{t("community.owner")}</Badge>}
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" aria-hidden="true" />
                     {t("community.memberCount", { count: group.member_count })}
@@ -110,7 +225,7 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
               <Button
                 variant={group.is_member ? "outline" : "default"}
                 size="sm"
-                onClick={() => toggleMembership(group)}
+                onClick={() => onToggleMembership(group)}
                 isLoading={busyGroupId === group.id}
               >
                 {group.is_member ? t("community.leave") : t("community.join")}
@@ -124,7 +239,7 @@ export function CommunityView({ initialGroups, error }: { initialGroups: Communi
           </Card>
         ))}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -161,6 +276,7 @@ function CreateGroupForm({
   return (
     <Card className="mt-4 animate-fade-in">
       <CardContent className="space-y-4 pt-6">
+        <p className="text-caption text-muted-foreground">{t("community.form.ownerNotice")}</p>
         {error && (
           <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />

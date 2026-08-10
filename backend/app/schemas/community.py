@@ -35,6 +35,11 @@ class CommunityGroupCreate(BaseModel):
     description: str = Field(default="", max_length=1000)
 
 
+class CommunityGroupUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=1000)
+
+
 class CommunityGroupRead(BaseModel):
     id: UUID
     group_type: CommunityGroupType
@@ -44,6 +49,10 @@ class CommunityGroupRead(BaseModel):
     member_count: int
     post_count: int
     is_member: bool
+    # Derived, not stored (see community.py router's module docstring):
+    # whether the current viewer is this group's owner — the earliest
+    # member, always the creator.
+    is_owner: bool
 
 
 class CommunityPostCreate(BaseModel):

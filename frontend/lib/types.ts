@@ -415,6 +415,11 @@ export interface CommunityGroupCreate {
   description?: string;
 }
 
+export interface CommunityGroupUpdate {
+  name?: string;
+  description?: string;
+}
+
 export interface CommunityGroupRead {
   id: string;
   group_type: CommunityGroupType;
@@ -424,6 +429,7 @@ export interface CommunityGroupRead {
   member_count: number;
   post_count: number;
   is_member: boolean;
+  is_owner: boolean;
 }
 
 export interface CommunityAuthorRead {
