@@ -6,6 +6,7 @@ Create Date: 2026-08-10 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = 'b192831432f0'
 down_revision = '2a72b314d0d2'
@@ -19,9 +20,22 @@ depends_on = None
 # same table/enum/index conventions autogenerate has produced for every
 # prior migration in this project (compare 2a72b314d0d2, which this one is
 # structurally closest to). `report_confidence` reuses the `confidencelevel`
-# enum type created in the very first migration (3bb0f586eb34) —
-# create_type=False so this migration does not attempt to CREATE TYPE a
-# type that already exists.
+# enum type created in the very first migration (3bb0f586eb34).
+#
+# FIXED (originally shipped broken, caught by a live production run):
+# the generic, dialect-agnostic sa.Enum(..., create_type=False) does NOT
+# reliably suppress SQLAlchemy's automatic CREATE TYPE DDL event when the
+# enum is used inline in a fresh op.create_table() — verified empirically
+# via alembic.operations.Operations.create_table() (the real code path
+# every migration uses), which still emitted `CREATE TYPE confidencelevel
+# AS ENUM (...)` and failed with asyncpg.exceptions.DuplicateObjectError
+# against production, where confidencelevel already exists. The
+# PostgreSQL-native postgresql.ENUM(..., create_type=False) — imported
+# from sqlalchemy.dialects.postgresql — correctly honors the flag, verified
+# the same way. This migration attempt left no partial schema changes
+# (confirmed against production via backend/check_db.py before this fix):
+# Postgres DDL is transactional, and the failure was on the 4th statement,
+# before any CREATE TABLE ran.
 
 
 def upgrade() -> None:
@@ -44,7 +58,7 @@ def upgrade() -> None:
     sa.Column('areas_to_improve', sa.JSON(), nullable=False),
     sa.Column('recommended_practice', sa.JSON(), nullable=False),
     sa.Column('next_interview_recommendation', sa.Text(), nullable=False),
-    sa.Column('report_confidence', sa.Enum('HIGH', 'MEDIUM', 'LOW', name='confidencelevel', create_type=False), nullable=True),
+    sa.Column('report_confidence', postgresql.ENUM('HIGH', 'MEDIUM', 'LOW', name='confidencelevel', create_type=False), nullable=True),
     sa.Column('report_confidence_reason', sa.Text(), nullable=False),
     sa.Column('report_grounded_on', sa.JSON(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
