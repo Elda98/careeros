@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, Target } from "lucide-react";
+import { Mic, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -15,7 +15,7 @@ import { groupByRecency, labelForGroup } from "@/lib/datetime";
 import { useTranslations } from "@/lib/i18n/locale-provider";
 import { CATEGORY_BADGE_VARIANT, CATEGORY_ICON, categoryKey } from "@/lib/notification-categories";
 import type { Fetched } from "@/lib/server-fetch";
-import type { NotificationRead, RenewalRecapRead, SkillGapAnalysisRead } from "@/lib/types";
+import type { InterviewSessionRead, NotificationRead, RenewalRecapRead, SkillGapAnalysisRead } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 // Dot color per notification-category Badge variant, matching Roadmap's
@@ -54,16 +54,27 @@ export function ProgressView({
   currentAnalysis,
   analysisHistory,
   notifications,
+  interviewSessions,
 }: {
   recap: Fetched<RenewalRecapRead>;
   currentAnalysis: Fetched<SkillGapAnalysisRead>;
   analysisHistory: Fetched<SkillGapAnalysisRead[]>;
   notifications: Fetched<NotificationRead[]>;
+  interviewSessions: Fetched<InterviewSessionRead[]>;
 }) {
   const { t, locale } = useTranslations();
 
   const notifs = useMemo(() => notifications.data ?? [], [notifications.data]);
   const milestoneGroups = useMemo(() => groupByRecency(notifs, (n) => n.created_at), [notifs]);
+
+  const completedInterviews = useMemo(
+    () => (interviewSessions.data ?? []).filter((s) => s.status === "completed" && s.overall_score !== null),
+    [interviewSessions.data],
+  );
+  const avgInterviewScore =
+    completedInterviews.length > 0
+      ? Math.round(completedInterviews.reduce((sum, s) => sum + (s.overall_score ?? 0), 0) / completedInterviews.length)
+      : null;
 
   const history = useMemo(
     () => [...(analysisHistory.data ?? [])].sort((a, b) => a.version - b.version),
@@ -228,6 +239,37 @@ export function ProgressView({
               value={new Intl.DateTimeFormat(locale, { year: "numeric", month: "short" }).format(
                 new Date(recapData.member_since),
               )}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* --- Interview practice ------------------------------------------- */}
+      <div>
+        <h2 className="mb-1 text-small font-medium text-foreground">{t("progress.interview.title")}</h2>
+        <p className="mb-4 text-caption text-muted-foreground">{t("progress.interview.description")}</p>
+
+        {interviewSessions.error && (
+          <SectionError message={t("progress.loadError")} error={interviewSessions.error} retryHref="/progress" />
+        )}
+
+        {!interviewSessions.error && (interviewSessions.data ?? []).length === 0 && (
+          <div className="rounded-xl border border-border-subtle bg-surface p-6 text-center">
+            <Mic className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
+            <p className="mt-2 text-small font-medium text-foreground">{t("progress.interview.emptyTitle")}</p>
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link href="/interview">{t("progress.interview.cta")}</Link>
+            </Button>
+          </div>
+        )}
+
+        {!interviewSessions.error && (interviewSessions.data ?? []).length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatCard label={t("progress.interview.totalSessions")} value={String((interviewSessions.data ?? []).length)} />
+            <StatCard label={t("progress.interview.completedSessions")} value={String(completedInterviews.length)} />
+            <StatCard
+              label={t("progress.interview.averageScore")}
+              value={avgInterviewScore !== null ? String(avgInterviewScore) : t("progress.interview.noScoreYet")}
             />
           </div>
         )}

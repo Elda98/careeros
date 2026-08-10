@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
-import type { NotificationRead, RenewalRecapRead, SkillGapAnalysisRead } from "@/lib/types";
+import type { InterviewSessionRead, NotificationRead, RenewalRecapRead, SkillGapAnalysisRead } from "@/lib/types";
 
 import { ProgressView } from "./progress-view";
 
@@ -34,11 +34,12 @@ async function ProgressContent({ token }: { token: string }) {
   // and can't show given that constraint (most notably: no
   // GET /roadmap/history exists, so there is no per-version roadmap
   // timeline here, only what notifications reveal about when it changed).
-  const [recap, currentAnalysis, analysisHistory, notifications] = await Promise.all([
+  const [recap, currentAnalysis, analysisHistory, notifications, interviewSessions] = await Promise.all([
     fetchSection<RenewalRecapRead>("/settings/renewal-recap", token),
     fetchOptionalSection<SkillGapAnalysisRead>("/ai-career-center/skill-gap-analysis/current", token),
     fetchSection<SkillGapAnalysisRead[]>("/ai-career-center/skill-gap-analysis/history", token),
     fetchSection<NotificationRead[]>("/notifications", token),
+    fetchSection<InterviewSessionRead[]>("/interview/sessions", token),
   ]);
 
   return (
@@ -47,6 +48,7 @@ async function ProgressContent({ token }: { token: string }) {
       currentAnalysis={currentAnalysis}
       analysisHistory={analysisHistory}
       notifications={notifications}
+      interviewSessions={interviewSessions}
     />
   );
 }

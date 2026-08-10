@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ArrowRight, FileText, Route as RouteIcon, Sparkles, Target } from "lucide-react";
+import { AlertCircle, ArrowRight, FileText, Mic, Route as RouteIcon, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
 
 import { ConfidenceBadge } from "@/components/confidence-badge";
@@ -25,6 +25,7 @@ export function DashboardView({ dashboard, error }: { dashboard: DashboardRead |
     { href: "/skill-gap-analysis", label: t("nav.skillGapAnalysis"), description: t("dashboard.quickLinks.skillGapDescription"), icon: Target },
     { href: "/roadmap", label: t("nav.roadmap"), description: t("dashboard.quickLinks.roadmapDescription"), icon: RouteIcon },
     { href: "/cv-feedback", label: t("nav.cvFeedback"), description: t("dashboard.quickLinks.cvFeedbackDescription"), icon: FileText },
+    { href: "/interview", label: t("nav.interview"), description: t("dashboard.quickLinks.interviewDescription"), icon: Mic },
   ];
 
   if (error) {
@@ -93,7 +94,7 @@ export function DashboardView({ dashboard, error }: { dashboard: DashboardRead |
 
       <div className="mt-8">
         <h2 className="mb-3 text-small font-medium text-muted-foreground">{t("dashboard.continueWhereYouLeftOff")}</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {quickLinks.map((link) => {
             const Icon = link.icon;
             return (

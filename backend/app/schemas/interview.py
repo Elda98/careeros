@@ -72,6 +72,10 @@ class InterviewSessionRead(BaseModel):
     target_company: str
     status: InterviewSessionStatus
     mode: InterviewSessionMode
+    # Already computed and persisted once a session completes (finish_session
+    # in app/api/routers/interview.py) — exposed on the list view too so
+    # Progress can show a real average without an extra per-session fetch.
+    overall_score: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

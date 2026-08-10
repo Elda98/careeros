@@ -350,6 +350,7 @@ export interface InterviewSessionRead {
   target_company: string;
   status: InterviewSessionStatus;
   mode: InterviewSessionMode;
+  overall_score: number | null;
   created_at: string;
 }
 

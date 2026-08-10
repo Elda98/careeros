@@ -165,7 +165,8 @@
     "quickLinks": {
       "skillGapDescription": "تعرّف على الفارق بينك وبين هدفك",
       "roadmapDescription": "خطتك المرتبة لسد الفجوة",
-      "cvFeedbackDescription": "احصل على مراجعة لسيرتك الذاتية مقابل هدفك"
+      "cvFeedbackDescription": "احصل على مراجعة لسيرتك الذاتية مقابل هدفك",
+      "interviewDescription": "تدرّب على مقابلة تجريبية لوظيفتك المستهدفة"
     }
   },
   "skillGapAnalysis": {
@@ -185,7 +186,8 @@
     },
     "recommendedServicesTitle": "احصل على دعم لسد هذه الفجوات",
     "recommendedServicesSubtitle": "خدمات على Orbit ذات صلة بالفجوات أعلاه.",
-    "browseAllServices": "تصفح جميع الخدمات"
+    "browseAllServices": "تصفح جميع الخدمات",
+    "discussInCommunity": "ناقش هذا التحليل مع أشخاص يعملون على الفجوات نفسها."
   },
   "roadmap": {
     "eyebrow": "خارطة طريقك",
@@ -385,6 +387,16 @@
     },
     "metrics": {
       "title": "مقاييس الإنجاز"
+    },
+    "interview": {
+      "title": "التدريب على المقابلات",
+      "description": "المقابلات التجريبية التي أكملتها، تُتابع إلى جانب بقية جاهزيتك المهنية.",
+      "emptyTitle": "لم تتدرب على مقابلة بعد",
+      "cta": "ابدأ مقابلة تجريبية",
+      "totalSessions": "جلسات بدأت",
+      "completedSessions": "جلسات مكتملة",
+      "averageScore": "متوسط التقييم",
+      "noScoreYet": "—"
     }
   },
   "profile": {

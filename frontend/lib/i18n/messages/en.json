@@ -165,7 +165,8 @@
     "quickLinks": {
       "skillGapDescription": "See what's between you and your goal",
       "roadmapDescription": "Your ordered plan to close the gap",
-      "cvFeedbackDescription": "Get your CV reviewed against your goal"
+      "cvFeedbackDescription": "Get your CV reviewed against your goal",
+      "interviewDescription": "Practice a mock interview for your target role"
     }
   },
   "skillGapAnalysis": {
@@ -185,7 +186,8 @@
     },
     "recommendedServicesTitle": "Get support closing these gaps",
     "recommendedServicesSubtitle": "Services on Orbit related to the gaps above.",
-    "browseAllServices": "Browse all services"
+    "browseAllServices": "Browse all services",
+    "discussInCommunity": "Talk through this analysis with people working on the same gaps."
   },
   "roadmap": {
     "eyebrow": "Your roadmap",
@@ -385,6 +387,16 @@
     },
     "metrics": {
       "title": "Completion metrics"
+    },
+    "interview": {
+      "title": "Interview practice",
+      "description": "Mock interviews you've completed, tracked alongside the rest of your career readiness.",
+      "emptyTitle": "You haven't practiced an interview yet",
+      "cta": "Start a mock interview",
+      "totalSessions": "Sessions started",
+      "completedSessions": "Sessions completed",
+      "averageScore": "Average score",
+      "noScoreYet": "—"
     }
   },
   "profile": {

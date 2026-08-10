@@ -177,6 +177,13 @@ export function SkillGapAnalysisView({
           </div>
         </div>
       )}
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface p-4">
+        <p className="text-small text-foreground">{t("skillGapAnalysis.discussInCommunity")}</p>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/community">{t("nav.community")}</Link>
+        </Button>
+      </div>
     </div>
   );
 }
