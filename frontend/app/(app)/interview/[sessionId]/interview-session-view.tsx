@@ -284,6 +284,7 @@ export function InterviewSessionView({
                     value={answerText}
                     onChange={(e) => setAnswerText(e.target.value)}
                     placeholder={t("interview.answerPlaceholder")}
+                    aria-label={t("interview.yourAnswer")}
                     disabled={submitting}
                     rows={5}
                   />

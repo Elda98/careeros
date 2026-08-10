@@ -14,6 +14,7 @@ Orbit is the public, user-facing brand name for **CareerOS**, an AI-native platf
 - [Solution](#solution)
 - [Features](#features)
 - [Role-based ecosystem](#role-based-ecosystem)
+- [Interview Preparation, Video Interview & Community](#interview-preparation-video-interview--community)
 - [AI architecture](#ai-architecture)
 - [Multi-agent overview](#multi-agent-overview)
 - [Tech stack](#tech-stack)
@@ -65,6 +66,8 @@ Every AI output is explainable on request (what it's grounded on), calibrated (c
 - **Explainability everywhere** — every AI-generated output (analysis, roadmap, feedback) can be explained on request: what data it used and why it reached its conclusion
 - **Supervised career-plan flow** (`POST /ai-career-center/career-plan/*`) — an alternative to the direct Skill-Gap Analysis endpoint that runs both agents through an explicit coordinator, pauses for a human approve/reject decision before the roadmap becomes real, and survives a backend restart mid-approval (see [Multi-agent overview](#multi-agent-overview))
 - **Role-based ecosystem** — Company and Service Provider personas with their own MVPs (job/internship postings + applicant review; service listings + discovery), connected back to the core career-intelligence system (see [Role-based ecosystem](#role-based-ecosystem))
+- **Interview Preparation & Video Interview** — a real, interactive mock-interview agent (LangGraph, grounded in the candidate's own Profile/Goal/CV) with per-answer grading, follow-up questions, and a final coaching report; an optional video mode with real speech-to-text and honestly-scoped delivery signals — code-complete, not yet production-verified (see [Interview Preparation, Video Interview & Community](#interview-preparation-video-interview--community))
+- **Community** — groups, posts, comments, and reactions shared across every persona — code-complete, not yet production-verified (see [Interview Preparation, Video Interview & Community](#interview-preparation-video-interview--community))
 
 ## Role-based ecosystem
 
@@ -96,6 +99,32 @@ Orbit's PRD (`docs/01-Product/PRD.md`) always scoped Orbit as more than a single
 ### Security
 
 Every persona-scoped endpoint is gated server-side by `require_account_type(...)`; ownership (not just role) is checked independently on every company- or provider-scoped read/write. A dedicated test file, `backend/tests/test_role_authorization.py`, verifies the full cross-role matrix (every non-owning persona rejected from every gated action, parametrized), that a request with no role selected yet is blocked exactly like a mismatched role, that an unauthenticated request 401s before any role check runs, that a role can never be supplied via a request body field or header, and that switching a declared role mid-session immediately changes what's enforced (the check reads the DB fresh every request, never cached).
+
+## Interview Preparation, Video Interview & Community
+
+> **Production status: code-complete, NOT yet production-verified.** All three features below are fully implemented, tested (hermetic suites, not live-service dependent), and deployed as code — but their database migrations have not been applied to the live database from this development environment (no network path to it; see [`docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md`](docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md) for exactly why, and the exact safe procedure to apply them). Until that runs, the API routes are live but will fail on any actual read/write against these features' tables. Do not describe these as working in production until that document's verification checklist passes.
+
+Three connected additions to the individual (Student/Graduate) experience, plus a Community layer shared across every persona.
+
+### Interview Preparation
+
+A real, interactive mock-interview flow — not a static question bank. `InterviewCoachAgent` (`ai/careeros_ai/agents/interview.py`) is a new LangGraph agent with two StateGraphs: `run_turn` (analyze the candidate's last answer → decide whether to follow up, ask the next question, or conclude — a genuine 3-way conditional edge, bounded so the loop provably terminates) and `run_report` (synthesize → calibrate a final coaching report). Report scores that map onto per-answer fields are real code-computed averages of the LLM's per-answer grades, never invented by the LLM directly — confidence is derived from how many questions were actually answered. Grounded in the candidate's own Profile/Goal/latest CV Feedback text — no duplicate data collection. A `GET /opportunities/{id}/explain-fit`-style on-request explanation ("why this score") reuses the same Explainability capability as every other AI Career Center output.
+
+### Video Interview
+
+An optional recording mode for the same Interview Preparation flow — the entire question/grading/report pipeline above is reused unchanged; only how an answer's text is produced differs. Real speech-to-text via Groq's Whisper endpoint (`ai/careeros_ai/capabilities/transcription.py` — same `GROQ_API_KEY`/provider as every chat model in this project, a different Groq endpoint via direct HTTP). Real, narrow, code-computed delivery signals from the actual transcript (`ai/careeros_ai/capabilities/voice_signals.py`): speech rate, pause count (real gaps between Whisper's segment timestamps), filler-word count (explicit regex list) — never fed into the agent's grading, kept a clearly separate "observed signals" surface. Client-side, real-time audio RMS volume (Web Audio API) and video movement (canvas frame-differencing) computed during recording. **Deliberately not implemented**: eye-contact or facial-expression detection, which would need a real face-landmark model this stack doesn't have — the UI and report never claim either, and the report's voice summary always carries an explicit disclaimer that these are observed signals, not a psychological or emotional diagnosis.
+
+### Community
+
+Shared across every persona (Student/Graduate/Company/Service Provider) — not scoped to one account type. Groups across the requested taxonomy (general, major, university, college, department, skill, goal, opportunities & events) are self-serve, the same pattern already used for job/service listings. Posting, commenting, and reacting require having joined the group first — an explicit, user-initiated action. This is deliberately the *safe* half of "Professional Community" per [`docs/00-Architecture-Decisions/ADR-001`](docs/00-Architecture-Decisions/ADR-001-professional-community-cross-user-data-scope.md): explicit browse/join/post, never system-inferred peer-matching, which ADR-001 flags as a genuinely unscoped cross-user-data question — not decided here, not silently assumed.
+
+### Integration into the existing flow
+
+Reuses existing data throughout rather than duplicating state: Dashboard gained Interview Prep as a fourth quick link; Progress gained a real "Interview practice" section (sessions/average score, computed from `GET /interview/sessions`, no new aggregation endpoint); Skill-Gap Analysis gained a Community link alongside its existing gap-matched service recommendations.
+
+### Design system
+
+The dark theme was retuned to the product workflow reference's exact palette (deep navy-violet background `#050318`, primary violet `#6C63FF`) — a token-value change only (`frontend/app/globals.css`'s `:root` block), not a rewrite; the existing CSS-variable/`next-themes` architecture, component structure, and light theme were untouched. Verified numerically (HSL→RGB→WCAG contrast) rather than via a live screenshot, since this environment has no real Clerk credentials for a local authenticated render.
 
 ## AI architecture
 
@@ -380,7 +409,7 @@ Project presentation: <https://orbit-slide-exact.lovable.app/>
 | **Backend** | <https://careeros-backend-17f9.onrender.com> (Render, free tier, Docker) | Live. `/health` and `/docs` (Swagger) both return 200; CORS confirmed working from the Vercel origin; all endpoints, including the new `/ai-career-center/career-plan/*` supervisor flow, are registered and reachable. |
 | **Swagger / OpenAPI** | <https://careeros-backend-17f9.onrender.com/docs> | Live, interactive. |
 | **Metrics** | <https://careeros-backend-17f9.onrender.com/metrics> | Live — real in-process counters (see [Observability](#ai-architecture)). |
-| **Database** | Neon Postgres (free tier) | Live. All Alembic migrations applied; all 12 application tables plus the LangGraph checkpoint tables (`checkpoints`, `checkpoint_blobs`, `checkpoint_writes`) confirmed present. Render's own free-tier Postgres was tried first and abandoned after exhaustive diagnosis of an external-connectivity issue specific to its free-tier proxy (confirmed via four independent Postgres clients across two OSes, all failing identically) — Neon's external endpoint has no such issue. |
+| **Database** | Neon Postgres (free tier) | Live for every feature through the role-based ecosystem (all migrations through `2a72b314d0d2` applied; confirmed tables present alongside the LangGraph checkpoint tables). **Not yet current**: three later migrations (Interview Preparation, Video Interview, Community — `b192831432f0`, `d9a17386e356`, `d10f45d0196e`) are committed and DDL-verified but not applied — see [`docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md`](docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md) for why and the exact procedure to close this gap. Render's own free-tier Postgres was tried first and abandoned after exhaustive diagnosis of an external-connectivity issue specific to its free-tier proxy (confirmed via four independent Postgres clients across two OSes, all failing identically) — Neon's external endpoint has no such issue. |
 | **Redis** | Render Key Value (free tier) | Live — reachable over Render's internal network from the backend; now actually used (the new rate limiter), not just declared. |
 | **AI (Groq)** | — | Fully working in production: the ReAct tool-calling loop, the CareerSupervisor's human-in-the-loop flow, and persistent checkpointing were all verified end-to-end against this exact production database before this section was written. |
 
@@ -413,6 +442,8 @@ Tracked in detail, feature-by-feature, against the PRD in [`PHASE0-AUDIT.md`](PH
 - **Live Clerk account deletion is code-complete but not exercised end-to-end** in every environment — it correctly fails closed (a 502, not a silent no-op) whenever `CLERK_SECRET_KEY` is unset, rather than pretending to succeed.
 - **`RoadmapAgent` and `CVFeedbackAgent` don't have their own tool-calling/ReAct loop.** Deliberate scope choice — see [Multi-agent overview](#multi-agent-overview) — `SkillGapAnalysisAgent` and `CareerSupervisor` are the flagships for those patterns rather than spreading them thin across every agent.
 - **In-process metrics (`/metrics`) reset on restart** and aren't aggregated across multiple instances — real, but not a substitute for a real metrics backend under production concurrency; documented as such in `careeros_ai/observability.py`.
+- **Interview Preparation, Video Interview, and Community's migrations aren't applied to production yet** — code-complete and tested, but not production-verified until [`docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md`](docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md)'s procedure runs (see [Interview Preparation, Video Interview & Community](#interview-preparation-video-interview--community)).
+- **Video Interview's delivery signals cover pacing, pauses, filler words, relative volume, and movement only** — deliberately not eye-contact or facial-expression detection, which would need a real face-landmark model this stack doesn't have; the report never claims either.
 
 ## Future work
 
@@ -423,28 +454,32 @@ Tracked in detail, feature-by-feature, against the PRD in [`PHASE0-AUDIT.md`](PH
 - A real payment processor integration behind Settings' subscription/renewal views.
 - Extend the ReAct/tool-calling pattern to `RoadmapAgent` and `CVFeedbackAgent` if their outputs would genuinely benefit from grounded tool lookups, rather than by default.
 - A real metrics backend (Prometheus/Grafana or similar) once `/metrics`' in-process counters stop being enough.
-- Expansion beyond the AI Career Center module (Learning Hub, Jobs & Internships, Community, Portfolio) per the long-term product vision in the PRD — deliberately out of scope for this phase.
+- Expansion beyond the AI Career Center module (Learning Hub, Portfolio) per the long-term product vision in the PRD — deliberately out of scope for this phase. (Jobs & Internships and Community are now implemented — see [Role-based ecosystem](#role-based-ecosystem) and [Interview Preparation, Video Interview & Community](#interview-preparation-video-interview--community).)
+- Apply the three pending Interview Preparation/Video Interview/Community migrations to production (see [`docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md`](docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md)) — the single largest remaining gap before this phase's work is production-verified.
+- Real eye-contact/facial-expression signals for Video Interview, if a genuine face-landmark model is added to the stack — not attempted this phase specifically to avoid an unverifiable claim.
+- Community moderation/reporting tooling, and the request/review half of the Service Provider marketplace (currently publish + discover only).
 
 ## Testing
 
 ```bash
-# Backend — 117 tests, hermetic (SQLite in-memory, fake AI/supervisor/rate-limiter, no live Postgres/Redis/Groq needed)
+# Backend — 147 tests, hermetic (SQLite in-memory, fake AI/supervisor/rate-limiter, no live Postgres/Redis/Groq needed)
 cd backend && pytest tests/
 
-# ai package — 16 tests, pure logic + real LangGraph graphs against scripted fakes, no API key needed
+# ai package — 32 tests, pure logic + real LangGraph graphs against scripted fakes, no API key needed
 cd ai && pytest tests/
 
 # Real end-to-end verification against live Postgres + live Groq
 cd backend && python -m scripts.verify_e2e   # or: make verify-e2e
 ```
 
-133/133 hermetic tests passing as of the last full run (backend ~6s, ai ~0.4s — every external call, including the new CareerSupervisor and rate limiter, is faked the same way the LLM agents always have been). This includes the role-based ecosystem's own coverage: account-type persistence, company/service-provider profile CRUD, job-opportunity and service-listing ownership isolation (a company/provider can never read or modify another's data), the candidate-readiness snapshot's field-level privacy boundary, and a dedicated cross-role authorization matrix (`backend/tests/test_role_authorization.py`) — see [Role-based ecosystem](#role-based-ecosystem). The end-to-end script additionally walks the complete real product flow (profile → goal → analysis → roadmap → CV feedback → notifications → settings) against a live database and live Groq calls, with results independently confirmed via direct `psql` queries. The ReAct tool-calling loop and the CareerSupervisor's human-in-the-loop flow (including a resume from a different process than the one that started it) were additionally verified live against production Neon Postgres + Groq during an earlier phase.
+179/179 hermetic tests passing as of the last full run (backend ~20s, ai ~0.7s — every external call, including the new CareerSupervisor, rate limiter, and Groq Whisper transcription, is faked the same way the LLM agents always have been). This includes the role-based ecosystem's own coverage (account-type persistence, ownership isolation, a dedicated cross-role authorization matrix — see [Role-based ecosystem](#role-based-ecosystem)) and Interview Preparation/Video Interview/Community's own coverage (the turn-graph's conditional routing and loop bound, real-average report scoring, the video path's transcript-guardrail and clamping, Community's join-before-participate rule and author-only delete). The end-to-end script additionally walks the complete real product flow (profile → goal → analysis → roadmap → CV feedback → notifications → settings) against a live database and live Groq calls, with results independently confirmed via direct `psql` queries — not yet extended to Interview Preparation/Video Interview/Community, whose own migrations aren't applied to that database yet (see [Interview Preparation, Video Interview & Community](#interview-preparation-video-interview--community)). The ReAct tool-calling loop and the CareerSupervisor's human-in-the-loop flow (including a resume from a different process than the one that started it) were additionally verified live against production Neon Postgres + Groq during an earlier phase.
 
 ## Documentation
 
 - [Product Requirements Document](docs/01-Product/PRD.md) — what CareerOS is and why every decision exists
 - [Solution Architecture Specification](docs/02-Solution-Architecture/SAS.md) — the structural shape: layers, boundaries, contracts
 - [`PHASE0-AUDIT.md`](PHASE0-AUDIT.md) — the feature-by-feature completion matrix, checked against actual code (scoped to the Phase 0 AI Career Center; the role-based ecosystem's own implemented-vs-vision breakdown lives in [Role-based ecosystem](#role-based-ecosystem) above and `CHANGELOG.md`, not this file)
+- [`docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md`](docs/99-Audits/PENDING_PRODUCTION_MIGRATIONS.md) — the exact, safe procedure to apply Interview Preparation/Video Interview/Community's pending migrations, and the checklist to verify before calling them production-ready
 - [`CHANGELOG.md`](CHANGELOG.md) — session-by-session implementation history
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — repository governance and contribution rules
 

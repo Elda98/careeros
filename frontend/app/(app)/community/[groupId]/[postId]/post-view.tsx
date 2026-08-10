@@ -140,6 +140,7 @@ export function PostView({
               value={commentBody}
               onChange={(e) => setCommentBody(e.target.value)}
               placeholder={t("community.form.commentPlaceholder")}
+              aria-label={t("community.form.commentPlaceholder")}
               disabled={submittingComment}
               rows={3}
             />
