@@ -302,6 +302,7 @@ export type InterviewQuestionCategory =
   | "resume_based"
   | "follow_up";
 export type InterviewSessionStatus = "in_progress" | "completed";
+export type InterviewSessionMode = "text" | "video";
 
 export interface InterviewSessionCreate {
   target_role: string;
@@ -309,6 +310,7 @@ export interface InterviewSessionCreate {
   experience_level: InterviewExperienceLevel;
   interview_type: InterviewType;
   target_company?: string;
+  mode?: InterviewSessionMode;
 }
 
 export interface InterviewAnswerRead {
@@ -320,6 +322,13 @@ export interface InterviewAnswerRead {
   structure_score: number;
   feedback_note: string;
   example_improved_answer: string;
+  /** Only set for InterviewSessionMode "video" answers — real observed
+   * speech/motion signals, never an emotional or psychological claim. */
+  speech_rate_wpm: number | null;
+  pause_count: number | null;
+  filler_word_count: number | null;
+  avg_volume_level: number | null;
+  movement_level: number | null;
   created_at: string;
 }
 
@@ -340,6 +349,7 @@ export interface InterviewSessionRead {
   interview_type: InterviewType;
   target_company: string;
   status: InterviewSessionStatus;
+  mode: InterviewSessionMode;
   created_at: string;
 }
 
@@ -356,6 +366,15 @@ export interface InterviewTurnRead {
   answer_feedback: InterviewAnswerRead | null;
   action: "follow_up" | "next_question" | "conclude";
   next_question: InterviewQuestionRead | null;
+}
+
+export interface VoiceSummaryRead {
+  avg_speech_rate_wpm: number;
+  total_pause_count: number;
+  total_filler_word_count: number;
+  avg_volume_level: number;
+  avg_movement_level: number;
+  disclaimer: string;
 }
 
 export interface InterviewSessionReportRead {
@@ -375,4 +394,5 @@ export interface InterviewSessionReportRead {
   confidence_reason: string;
   grounded_on: string[];
   completed_at: string | null;
+  voice_summary: VoiceSummaryRead | null;
 }

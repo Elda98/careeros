@@ -15,6 +15,7 @@ from app.db.models import (
     ConfidenceLevel,
     InterviewExperienceLevel,
     InterviewQuestionCategory,
+    InterviewSessionMode,
     InterviewSessionStatus,
     InterviewType,
 )
@@ -26,6 +27,7 @@ class InterviewSessionCreate(BaseModel):
     experience_level: InterviewExperienceLevel
     interview_type: InterviewType
     target_company: str = ""
+    mode: InterviewSessionMode = InterviewSessionMode.TEXT
 
 
 class InterviewAnswerRead(BaseModel):
@@ -37,6 +39,14 @@ class InterviewAnswerRead(BaseModel):
     structure_score: int
     feedback_note: str
     example_improved_answer: str
+    # Only set for InterviewSessionMode.VIDEO answers — real, observed
+    # speech/motion signals, never an emotional or psychological claim
+    # (see careeros_ai/capabilities/voice_signals.py).
+    speech_rate_wpm: float | None = None
+    pause_count: int | None = None
+    filler_word_count: int | None = None
+    avg_volume_level: float | None = None
+    movement_level: float | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -61,6 +71,7 @@ class InterviewSessionRead(BaseModel):
     interview_type: InterviewType
     target_company: str
     status: InterviewSessionStatus
+    mode: InterviewSessionMode
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -86,6 +97,20 @@ class InterviewTurnRead(BaseModel):
     next_question: InterviewQuestionRead | None = None
 
 
+class VoiceSummaryRead(BaseModel):
+    """Real, code-computed aggregates over a video session's answers —
+    never blended into the LLM-graded report fields above, and always
+    accompanied by `disclaimer` (PRD requirement: behavioral analysis must
+    read as observed signals, never a diagnosis)."""
+
+    avg_speech_rate_wpm: float
+    total_pause_count: int
+    total_filler_word_count: int
+    avg_volume_level: float
+    avg_movement_level: float
+    disclaimer: str
+
+
 class InterviewSessionReportRead(BaseModel):
     id: UUID
     status: InterviewSessionStatus
@@ -103,5 +128,6 @@ class InterviewSessionReportRead(BaseModel):
     confidence_reason: str
     grounded_on: list[str]
     completed_at: datetime | None
+    voice_summary: VoiceSummaryRead | None = None
 
     model_config = {"from_attributes": True}

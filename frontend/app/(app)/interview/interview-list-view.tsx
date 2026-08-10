@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { AlertCircle, ChevronRight, Sparkles } from "lucide-react";
+import { AlertCircle, ChevronRight, FileText, Sparkles, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -15,6 +15,7 @@ import { useTranslations } from "@/lib/i18n/locale-provider";
 import type {
   InterviewExperienceLevel,
   InterviewSessionDetailRead,
+  InterviewSessionMode,
   InterviewSessionRead,
   InterviewType,
 } from "@/lib/types";
@@ -36,6 +37,7 @@ export function InterviewListView({
   const [targetCompany, setTargetCompany] = useState("");
   const [experienceLevel, setExperienceLevel] = useState<InterviewExperienceLevel>("entry");
   const [interviewType, setInterviewType] = useState<InterviewType>("mixed");
+  const [mode, setMode] = useState<InterviewSessionMode>("text");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -53,6 +55,7 @@ export function InterviewListView({
           experience_level: experienceLevel,
           interview_type: interviewType,
           target_company: targetCompany,
+          mode,
         }),
       });
       router.push(`/interview/${session.id}`);
@@ -82,6 +85,42 @@ export function InterviewListView({
               <p className="text-small text-foreground">{error ?? formError}</p>
             </div>
           )}
+          <div className="space-y-1.5">
+            <Label>{t("interview.form.modeLabel")}</Label>
+            <div className="flex gap-2" role="radiogroup" aria-label={t("interview.form.modeLabel")}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mode === "text"}
+                onClick={() => setMode("text")}
+                disabled={submitting}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-small transition-colors ${
+                  mode === "text"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <FileText className="h-4 w-4" aria-hidden="true" />
+                {t("interview.form.modeText")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mode === "video"}
+                onClick={() => setMode("video")}
+                disabled={submitting}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-small transition-colors ${
+                  mode === "video"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Video className="h-4 w-4" aria-hidden="true" />
+                {t("interview.form.modeVideo")}
+              </button>
+            </div>
+            {mode === "video" && <p className="text-caption text-muted-foreground">{t("interview.form.modeVideoHint")}</p>}
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="iv-target-role">{t("interview.form.targetRoleLabel")}</Label>
             <Input
@@ -163,7 +202,14 @@ export function InterviewListView({
                 className="flex w-full items-center justify-between gap-2 rounded-xl border border-border-subtle bg-surface p-4 text-start shadow-xs transition-shadow hover:shadow-md"
               >
                 <div>
-                  <p className="font-medium text-foreground">{session.target_role}</p>
+                  <p className="flex items-center gap-1.5 font-medium text-foreground">
+                    {session.mode === "video" ? (
+                      <Video className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    )}
+                    {session.target_role}
+                  </p>
                   <p className="mt-0.5 text-caption text-muted-foreground">
                     {new Date(session.created_at).toLocaleDateString()}
                   </p>

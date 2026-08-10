@@ -17,7 +17,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import JSON, Boolean, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -495,6 +495,11 @@ class InterviewSessionStatus(str, enum.Enum):
     COMPLETED = "completed"
 
 
+class InterviewSessionMode(str, enum.Enum):
+    TEXT = "text"
+    VIDEO = "video"
+
+
 class InterviewSession(Base):
     """Owned exclusively by the Interview Coach Agent (`ai/careeros_ai/
     agents/interview.py`) — questions/answers/feedback/report content only;
@@ -517,6 +522,7 @@ class InterviewSession(Base):
     status: Mapped[InterviewSessionStatus] = mapped_column(
         Enum(InterviewSessionStatus), default=InterviewSessionStatus.IN_PROGRESS
     )
+    mode: Mapped[InterviewSessionMode] = mapped_column(Enum(InterviewSessionMode), default=InterviewSessionMode.TEXT)
 
     # Report fields — populated only once status becomes COMPLETED.
     overall_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -569,6 +575,20 @@ class InterviewAnswer(Base):
     structure_score: Mapped[int] = mapped_column(Integer, nullable=False)
     feedback_note: Mapped[str] = mapped_column(Text, default="")
     example_improved_answer: Mapped[str] = mapped_column(Text, default="")
+
+    # Populated only for InterviewSessionMode.VIDEO answers — real signals
+    # computed from the actual recording (Whisper segment timestamps for
+    # pacing/pauses, a regex filler-word count, client-computed audio RMS/
+    # frame-difference for volume/movement). Never populated for a TEXT
+    # answer, and never fed back into AnswerFeedback's LLM-graded scores —
+    # kept as a separate, plainly-labeled "observed signals" surface (see
+    # careeros_ai/capabilities/voice_signals.py's own docstring).
+    speech_rate_wpm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pause_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    filler_word_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_volume_level: Mapped[float | None] = mapped_column(Float, nullable=True)
+    movement_level: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     question: Mapped[InterviewQuestion] = relationship(back_populates="answer")

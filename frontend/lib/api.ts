@@ -68,7 +68,13 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { token, ...init } = options;
   const headers = new Headers(init.headers);
-  headers.set("Content-Type", "application/json");
+  // A FormData body (the Video Interview recorder's multipart upload) must
+  // let the browser set its own `Content-Type: multipart/form-data;
+  // boundary=...` — forcing application/json here would send a malformed
+  // request the backend can't parse.
+  if (!(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(`${resolveApiUrl()}${path}`, { ...init, headers });

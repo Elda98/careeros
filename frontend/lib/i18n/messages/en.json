@@ -616,6 +616,10 @@
     "subtitle": "A mock interview tailored to your target role, level, and CV — with a graded, explainable report at the end.",
     "form": {
       "heading": "Start a new mock interview",
+      "modeLabel": "Interview format",
+      "modeText": "Text",
+      "modeVideo": "Video",
+      "modeVideoHint": "You'll answer out loud using your camera and microphone.",
       "targetRoleLabel": "Target role",
       "targetRolePlaceholder": "e.g. Backend Engineer",
       "experienceLevelLabel": "Experience level",
@@ -672,6 +676,22 @@
       "areasToImprove": "Areas to improve",
       "recommendedPractice": "Recommended practice",
       "nextInterview": "For your next interview"
+    },
+    "video": {
+      "permissionPrompt": "Orbit needs access to your camera and microphone to record your answer.",
+      "permissionDenied": "Camera/microphone access was denied. Enable it in your browser settings to continue.",
+      "enableCamera": "Enable camera & microphone",
+      "startRecording": "Start recording",
+      "stopRecording": "Stop recording",
+      "submitRecording": "Submit recording",
+      "reRecord": "Re-record",
+      "pace": "Pace",
+      "wpm": "words/min",
+      "pauses": "Pauses",
+      "fillerWords": "Filler words",
+      "volume": "Relative volume",
+      "movement": "Movement level",
+      "summaryTitle": "Voice & delivery signals"
     }
   }
 }

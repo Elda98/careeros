@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -19,6 +19,8 @@ import type {
   InterviewSessionReportRead,
   InterviewTurnRead,
 } from "@/lib/types";
+
+import { VideoAnswerRecorder } from "./video-answer-recorder";
 
 const CATEGORY_KEY: Record<InterviewQuestionCategory, string> = {
   intro: "interview.category.intro",
@@ -82,6 +84,35 @@ export function InterviewSessionView({
         return { ...prev, questions: withNext };
       });
       setAnswerText("");
+    } catch (e) {
+      setActionError(e instanceof Error ? extractApiErrorMessage(e.message) : t("interview.answerError"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSubmitVideoAnswer(audio: Blob, avgVolumeLevel: number, movementLevel: number) {
+    if (!session || !lastQuestion) return;
+    setActionError(null);
+    setSubmitting(true);
+    try {
+      const token = await getToken();
+      const formData = new FormData();
+      formData.append("question_id", lastQuestion.id);
+      formData.append("avg_volume_level", String(avgVolumeLevel));
+      formData.append("movement_level", String(movementLevel));
+      formData.append("audio", audio, "answer.webm");
+      const turn = await apiFetch<InterviewTurnRead>(`/interview/sessions/${session.id}/answers/media`, {
+        method: "POST",
+        token,
+        body: formData,
+      });
+      setSession((prev) => {
+        if (!prev) return prev;
+        const updated = prev.questions.map((q) => (q.id === lastQuestion.id ? { ...q, answer: turn.answer_feedback } : q));
+        const withNext = turn.next_question ? [...updated, turn.next_question] : updated;
+        return { ...prev, questions: withNext };
+      });
     } catch (e) {
       setActionError(e instanceof Error ? extractApiErrorMessage(e.message) : t("interview.answerError"));
     } finally {
@@ -168,6 +199,32 @@ export function InterviewSessionView({
               <p className="mt-1 text-small text-foreground">{report.next_interview_recommendation}</p>
             </div>
 
+            {report.voice_summary && (
+              <div className="rounded-xl border border-border-subtle bg-surface p-4">
+                <p className="text-small font-medium text-foreground">{t("interview.video.summaryTitle")}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <ReportStat
+                    label={`${t("interview.video.pace")} (${t("interview.video.wpm")})`}
+                    value={report.voice_summary.avg_speech_rate_wpm}
+                  />
+                  <ReportStat label={t("interview.video.pauses")} value={report.voice_summary.total_pause_count} />
+                  <ReportStat label={t("interview.video.fillerWords")} value={report.voice_summary.total_filler_word_count} />
+                  <ReportStat
+                    label={t("interview.video.volume")}
+                    value={Math.round(report.voice_summary.avg_volume_level * 100)}
+                  />
+                  <ReportStat
+                    label={t("interview.video.movement")}
+                    value={Math.round(report.voice_summary.avg_movement_level * 100)}
+                  />
+                </div>
+                <div className="mt-3 flex items-start gap-2 text-caption text-muted-foreground">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <p>{report.voice_summary.disclaimer}</p>
+                </div>
+              </div>
+            )}
+
             {report.grounded_on.length > 0 && (
               <p className="text-caption text-muted-foreground">
                 {t("common.groundedIn")}: {report.grounded_on.join(", ")}
@@ -194,6 +251,13 @@ export function InterviewSessionView({
                   <Badge variant="outline">{t("interview.scores.structure")}: {question.answer.structure_score}</Badge>
                 </div>
                 <p className="text-small text-muted-foreground">{question.answer.feedback_note}</p>
+                {question.answer.speech_rate_wpm !== null && (
+                  <div className="flex flex-wrap items-center gap-1.5 border-t border-border-subtle pt-2.5">
+                    <Badge variant="outline">{t("interview.video.pace")}: {question.answer.speech_rate_wpm} {t("interview.video.wpm")}</Badge>
+                    <Badge variant="outline">{t("interview.video.pauses")}: {question.answer.pause_count}</Badge>
+                    <Badge variant="outline">{t("interview.video.fillerWords")}: {question.answer.filler_word_count}</Badge>
+                  </div>
+                )}
                 {question.answer.example_improved_answer && (
                   <div className="rounded-lg border-s-2 border-primary bg-secondary/60 p-3">
                     <p className="text-caption font-medium text-foreground">{t("interview.exampleAnswer")}</p>
@@ -212,16 +276,22 @@ export function InterviewSessionView({
               <CardTitle className="text-body">{t("interview.yourAnswer")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Textarea
-                value={answerText}
-                onChange={(e) => setAnswerText(e.target.value)}
-                placeholder={t("interview.answerPlaceholder")}
-                disabled={submitting}
-                rows={5}
-              />
-              <Button onClick={handleSubmitAnswer} disabled={submitting || !answerText.trim()} isLoading={submitting}>
-                {t("interview.submitAnswer")}
-              </Button>
+              {session.mode === "video" ? (
+                <VideoAnswerRecorder onSubmit={handleSubmitVideoAnswer} submitting={submitting} />
+              ) : (
+                <>
+                  <Textarea
+                    value={answerText}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                    placeholder={t("interview.answerPlaceholder")}
+                    disabled={submitting}
+                    rows={5}
+                  />
+                  <Button onClick={handleSubmitAnswer} disabled={submitting || !answerText.trim()} isLoading={submitting}>
+                    {t("interview.submitAnswer")}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
