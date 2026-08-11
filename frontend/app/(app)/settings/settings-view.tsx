@@ -203,6 +203,7 @@ export function SettingsView({
         cancelling={cancelling}
         cancelError={cancelError}
         onCancel={handleCancelSubscription}
+        isCareerSeeker={isCareerSeeker}
       />
       <NotificationPrefsCard
         prefs={prefs}
@@ -372,6 +373,7 @@ function SubscriptionCard({
   cancelling,
   cancelError,
   onCancel,
+  isCareerSeeker,
 }: {
   sub: SubscriptionRead | null;
   subError: string | null;
@@ -381,6 +383,9 @@ function SubscriptionCard({
   cancelling: boolean;
   cancelError: string | null;
   onCancel: () => void;
+  /** Roadmap/skills/CV-feedback stats are Student/Graduate progress —
+   * meaningless (always zero) for a Company/Service Provider account. */
+  isCareerSeeker: boolean;
 }) {
   const { t, locale } = useTranslations();
   const r = recap.data;
@@ -435,12 +440,19 @@ function SubscriptionCard({
           {recap.error && <SectionError message={t("settings.subscription.loadError")} error={recap.error} retryHref="/settings" />}
           {r && (
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard
-                label={t("settings.subscription.recapRoadmapCompleted")}
-                value={`${r.roadmap_items_completed_count} / ${r.roadmap_items_total_count}`}
-              />
-              <StatCard label={t("settings.subscription.recapSkillsAddressed")} value={String(r.skills_addressed_count)} />
-              <StatCard label={t("settings.subscription.recapCvRounds")} value={String(r.cv_feedback_rounds_count)} />
+              {isCareerSeeker && (
+                <>
+                  <StatCard
+                    label={t("settings.subscription.recapRoadmapCompleted")}
+                    value={`${r.roadmap_items_completed_count} / ${r.roadmap_items_total_count}`}
+                  />
+                  <StatCard
+                    label={t("settings.subscription.recapSkillsAddressed")}
+                    value={String(r.skills_addressed_count)}
+                  />
+                  <StatCard label={t("settings.subscription.recapCvRounds")} value={String(r.cv_feedback_rounds_count)} />
+                </>
+              )}
               <StatCard
                 label={t("settings.subscription.recapMemberSince")}
                 value={new Intl.DateTimeFormat(locale, { year: "numeric", month: "short" }).format(new Date(r.member_since))}

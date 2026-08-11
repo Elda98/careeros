@@ -157,6 +157,25 @@ def test_apply_then_company_sees_application_then_updates_status(client: TestCli
     assert update.json()["status"] == "accepted"
 
 
+def test_non_career_seeker_cannot_apply_or_request_fit_explanation(client: TestClient) -> None:
+    """Applying to a posting and asking for an AI fit explanation only
+    make sense for a Student/Graduate — a Company "applying" to another
+    company's job is not a real product action, and fit explanations are
+    grounded in the caller's own Profile/Skill-Gap Analysis, which a
+    Company/Service Provider never has."""
+    _become_company(client, name="Acme Robotics")
+    created = client.post("/company/opportunities", json={"title": "Backend Intern"})
+    opportunity_id = created.json()["id"]
+
+    try:
+        _as("user_other_company_applying")
+        client.put("/account/type", json={"account_type": "service_provider"})
+        assert client.post(f"/opportunities/{opportunity_id}/apply").status_code == 403
+        assert client.get(f"/opportunities/{opportunity_id}/explain-fit").status_code == 403
+    finally:
+        _reset()
+
+
 def test_application_readiness_exposes_declared_data_not_raw_career_graph(client: TestClient) -> None:
     """Milestone 5 (ecosystem connection): a company sees the candidate's
     safe CandidateReadinessRead snapshot (target role, top-line confidence,

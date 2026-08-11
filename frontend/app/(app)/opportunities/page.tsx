@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import type { JobOpportunityWithCompanyRead, MyApplicationRead } from "@/lib/types";
 
 import { OpportunitiesView } from "./opportunities-view";
@@ -16,6 +17,15 @@ export default async function OpportunitiesPage() {
   // before any Suspense boundary is returned.
   if (!token) {
     redirect("/sign-in");
+  }
+
+  // Browsing/applying is a Student/Graduate action (a Company posts and
+  // reviews applicants from their own dashboard, not here) — send a
+  // Company/Service Provider account to their own Home instead of a page
+  // whose one real action (Apply) would just 403 for them.
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   return (

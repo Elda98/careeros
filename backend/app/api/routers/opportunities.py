@@ -11,6 +11,14 @@ write (a company can list its own postings, never another company's),
 returning 404 rather than 403 for a posting that exists but isn't
 theirs, matching this codebase's existing IDOR-safe pattern (see
 ai_career_center.py's explain endpoints).
+
+The reverse direction is gated too: applying to a posting and asking for
+an AI fit explanation are Student/Graduate-only actions (a Company account
+"applying" to another company's job makes no product sense, and a fit
+explanation is grounded in the caller's own Profile/Skill-Gap Analysis,
+which only a career seeker has) — `_CAREER_SEEKER` below, same mechanism.
+Browsing (`GET /opportunities`) stays open to every persona; there's a
+real case for a Company wanting visibility into the market.
 """
 
 from __future__ import annotations
@@ -39,6 +47,7 @@ from app.schemas.ecosystem import (
 from careeros_ai.capabilities.explainability import explain_output
 
 router = APIRouter(tags=["opportunities"])
+_CAREER_SEEKER = require_account_type(AccountType.STUDENT, AccountType.GRADUATE)
 
 _OPPORTUNITY_LOAD = selectinload(JobOpportunity.company_profile)
 _APPLICATIONS_LOAD = (
@@ -254,7 +263,7 @@ async def browse_opportunities(
 @router.get("/opportunities/{opportunity_id}/explain-fit", response_model=ExplanationRead)
 async def explain_opportunity_fit(
     opportunity_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     llm=Depends(get_explainability_llm),
 ) -> ExplanationRead:
@@ -319,7 +328,7 @@ async def explain_opportunity_fit(
 @router.post("/opportunities/{opportunity_id}/apply", response_model=MyApplicationRead, status_code=status.HTTP_201_CREATED)
 async def apply_to_opportunity(
     opportunity_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     result = await db.execute(
