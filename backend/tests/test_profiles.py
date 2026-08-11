@@ -1,4 +1,38 @@
+import pytest
 from fastapi.testclient import TestClient
+
+from app.api.deps import get_current_user_id
+from app.main import app
+from tests.conftest import TEST_CLERK_USER_ID
+
+
+@pytest.fixture(autouse=True)
+def _student_role(client: TestClient) -> None:
+    """Profile/Goal are now gated to STUDENT/GRADUATE (ai_career_center.py
+    and profiles.py both reject an unassigned role, matching every other
+    persona-owned router) — every test in this file exercises that
+    career-seeker surface, so it needs a role assigned first."""
+    client.put("/account/type", json={"account_type": "student"})
+
+
+@pytest.mark.parametrize("account_type", ["company", "service_provider"])
+def test_profile_and_goal_endpoints_reject_non_career_seeker_roles(client: TestClient, account_type: str) -> None:
+    """A Company/Service Provider account has its own separate identity
+    record (CompanyProfile/ServiceProviderProfile) — it must not be able to
+    read or write a career-seeker Profile/Goal at all, not just have the
+    option hidden in the frontend. Uses a fresh identity (rather than
+    re-assigning TEST_CLERK_USER_ID, already locked to "student" by the
+    fixture above) since a role, once set, can no longer be changed."""
+    app.dependency_overrides[get_current_user_id] = lambda: f"user_{account_type}_role_test"
+    try:
+        client.put("/account/type", json={"account_type": account_type})
+        assert client.get("/profile").status_code == 403
+        assert client.patch("/profile", json={"background": "x"}).status_code == 403
+        assert client.get("/profile/goals").status_code == 403
+        assert client.post("/profile/goals", json={"target_role": "x"}).status_code == 403
+        assert client.get("/profile/onboarding-status").status_code == 403
+    finally:
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_CLERK_USER_ID
 
 
 def test_get_profile_creates_empty_profile_on_first_access(client: TestClient) -> None:

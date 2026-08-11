@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
 import type { InterviewSessionRead, NotificationRead, RenewalRecapRead, SkillGapAnalysisRead } from "@/lib/types";
 
@@ -16,6 +17,14 @@ export default async function ProgressPage() {
   // before any Suspense boundary is returned.
   if (!token) {
     redirect("/sign-in");
+  }
+
+  // Progress aggregates the Skill-Gap Analysis/Roadmap/CV Feedback
+  // history — all Student/Graduate-only server-side now. See
+  // skill-gap-analysis/page.tsx for the same guard and why it exists.
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   return (

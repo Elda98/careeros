@@ -1,6 +1,5 @@
 import { Building2 } from "lucide-react";
 
-import { Logo } from "@/components/logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CompanyProfileRead, JobOpportunityRead } from "@/lib/types";
 
@@ -8,10 +7,10 @@ import { CompanyDashboardClient } from "./company-dashboard-client";
 import { CompanyOpportunitiesPanel } from "./company-opportunities-panel";
 
 /**
- * The Company persona's own landing surface — deliberately not the
- * (app) route group's Sidebar shell, which is built around Student/
- * Graduate navigation (Skill Gap Analysis, Roadmap, CV Feedback) that
- * doesn't apply here. Shows the company's real saved profile plus real
+ * The Company persona's own Home — rendered inside the same AppShell
+ * (Sidebar/Topbar) every persona gets, with its own short nav
+ * (COMPANY_NAV_GROUPS in nav-config.ts) since none of the career-seeker
+ * tools apply here. Shows the company's real saved profile plus real
  * job/internship posting management (Milestone 3) — candidate matching
  * and the richer ecosystem-connection view are later milestones.
  */
@@ -23,11 +22,7 @@ export function CompanyDashboardView({
   opportunities: JobOpportunityRead[];
 }) {
   return (
-    <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-3xl px-6 py-12 sm:px-8">
-      <div className="mb-8 flex items-center gap-3">
-        <Logo size={32} />
-      </div>
-
+    <div className="mx-auto max-w-3xl px-6 py-8 sm:px-8">
       <CompanyDashboardClient companyName={profile?.company_name ?? ""} />
 
       <Card className="mt-6 animate-fade-in">
@@ -60,6 +55,6 @@ export function CompanyDashboardView({
       </Card>
 
       <CompanyOpportunitiesPanel initialOpportunities={opportunities} />
-    </main>
+    </div>
   );
 }

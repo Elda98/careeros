@@ -4,10 +4,9 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
-import { destinationForAccountType } from "@/lib/role-routing";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import { fetchOptionalSection, fetchSection } from "@/lib/server-fetch";
 import type {
-  AccountTypeRead,
   CommunityGroupRead,
   DashboardRead,
   GoalRead,
@@ -48,24 +47,14 @@ export default async function DashboardPage() {
   // experience specifically, not a generic post-auth landing point
   // anymore. A user with no role chosen yet is sent to pick one; a
   // Company/Service Provider account is sent to *their* dashboard instead
-  // (this route never renders career-seeker content for them).
+  // (this route never renders career-seeker content for them) — the same
+  // check every other career-seeker-only page uses (lib/role-routing.ts).
   //
   // redirect() stays outside the try block, same reasoning as the
   // onboarding-status check below — it throws internally to interrupt
   // rendering, and a bare `catch` here would silently swallow that throw
   // instead of actually redirecting.
-  let redirectTarget: string | null = null;
-  try {
-    const accountType = await apiFetch<AccountTypeRead>("/account/type", { token });
-    if (accountType.account_type === null) {
-      redirectTarget = "/role-selection";
-    } else if (accountType.account_type === "company" || accountType.account_type === "service_provider") {
-      redirectTarget = destinationForAccountType(accountType.account_type);
-    }
-  } catch {
-    // Backend unreachable — fall through and let the existing
-    // onboarding-status check (and DashboardContent) handle/report it.
-  }
+  const redirectTarget = await careerSeekerRedirectTarget(token);
   if (redirectTarget) {
     redirect(redirectTarget);
   }

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, apiFetch } from "@/lib/api";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import type { RoadmapRead } from "@/lib/types";
 
 import { RoadmapView } from "./roadmap-view";
@@ -16,6 +17,13 @@ export default async function RoadmapPage() {
   // before any Suspense boundary is returned.
   if (!token) {
     redirect("/sign-in");
+  }
+
+  // Roadmap is Student/Graduate-only server-side now — see
+  // skill-gap-analysis/page.tsx for the same guard and why it exists.
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   return (

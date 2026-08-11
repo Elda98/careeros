@@ -1,4 +1,13 @@
+import pytest
 from fastapi.testclient import TestClient
+
+
+@pytest.fixture(autouse=True)
+def _student_role(client: TestClient) -> None:
+    """Several tests here trigger notifications via the now career-seeker-
+    gated Profile/AI Career Center endpoints; harmless for the tests that
+    don't."""
+    client.put("/account/type", json={"account_type": "student"})
 
 
 def _complete_onboarding_bar(client: TestClient) -> None:

@@ -2,7 +2,16 @@
 
 Owns Profile and Goal exclusively — the AI Career Center reads these but
 never writes them (SAS §14.3's read-without-write pattern).
-"""
+
+Profile/Goal are Student/Graduate concepts specifically — a Company or
+Service Provider account has its own separate identity record
+(CompanyProfile/ServiceProviderProfile, account.py) and no skills or
+career goal. Every endpoint here is therefore gated to STUDENT/GRADUATE
+via `require_account_type`, the same mechanism every other persona-owned
+router (company.py, services.py, community.py's group creation) already
+uses — this is what actually stops a Company account from setting a
+career goal or reading a Student's-shaped profile, not merely the
+frontend not offering the option."""
 
 from __future__ import annotations
 
@@ -12,13 +21,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_db, require_account_type
 from app.core.security import PromptInjectionDetected, sanitize_free_text, sanitize_skill_list
-from app.db.models import Goal, Profile, User
+from app.db.models import AccountType, Goal, Profile, User
 from app.schemas.profile import GoalCreate, GoalRead, OnboardingStatusRead, ProfileRead, ProfileUpdate
 from app.services import onboarding
 
 router = APIRouter(prefix="/profile", tags=["profile"])
+_CAREER_SEEKER = require_account_type(AccountType.STUDENT, AccountType.GRADUATE)
 
 _FREE_TEXT_FIELDS = ("background", "education", "experience")
 
@@ -29,7 +39,7 @@ def _active_goal(user: User) -> Goal | None:
 
 @router.get("", response_model=ProfileRead)
 async def get_profile(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> Profile:
     if user.profile is None:
         profile = Profile(user_id=user.id)
@@ -43,7 +53,7 @@ async def get_profile(
 @router.patch("", response_model=ProfileRead)
 async def update_profile(
     body: ProfileUpdate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
 ) -> Profile:
     """FR-PROF-1. Note: whether an edit is a *material* change (BR-GAP-3,
@@ -84,7 +94,7 @@ async def update_profile(
 
 @router.delete("", response_model=ProfileRead, status_code=status.HTTP_200_OK)
 async def delete_profile_data(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> Profile:
     """FR-SET-3, BR-DATA-3: delete specific stored data (here, Profile
     fields) independent of full account deletion (FR-AUTH-5, not yet
@@ -110,7 +120,7 @@ async def delete_profile_data(
 
 
 @router.get("/onboarding-status", response_model=OnboardingStatusRead)
-async def get_onboarding_status(user: User = Depends(get_current_user)) -> OnboardingStatusRead:
+async def get_onboarding_status(user: User = Depends(_CAREER_SEEKER)) -> OnboardingStatusRead:
     """FR-ONBOARD-1 / FR-PROF-4: tells the frontend exactly what's missing
     before a first Skill-Gap Analysis can run, and whether onboarding (the
     first analysis) has already completed — the same rule the AI Career
@@ -130,7 +140,7 @@ async def get_onboarding_status(user: User = Depends(get_current_user)) -> Onboa
 
 @router.get("/goals", response_model=list[GoalRead])
 async def list_goals(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> list[Goal]:
     result = await db.execute(select(Goal).where(Goal.user_id == user.id).order_by(Goal.created_at.desc()))
     return list(result.scalars().all())
@@ -139,7 +149,7 @@ async def list_goals(
 @router.post("/goals", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
 async def create_goal(
     body: GoalCreate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
 ) -> Goal:
     """BR-GOAL-1: exactly one active goal at a time. BR-GOAL-2: setting a new
@@ -168,7 +178,7 @@ async def create_goal(
 
 
 @router.get("/goals/active", response_model=GoalRead)
-async def get_active_goal(user: User = Depends(get_current_user)) -> Goal:
+async def get_active_goal(user: User = Depends(_CAREER_SEEKER)) -> Goal:
     goal = _active_goal(user)
     if goal is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No active goal set yet")
@@ -178,7 +188,7 @@ async def get_active_goal(user: User = Depends(get_current_user)) -> Goal:
 @router.post("/goals/{goal_id}/reactivate", response_model=GoalRead)
 async def reactivate_goal(
     goal_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
 ) -> Goal:
     """BR-GOAL-5: a user may reactivate a previous goal, making it active

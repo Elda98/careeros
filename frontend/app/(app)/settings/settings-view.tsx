@@ -58,6 +58,7 @@ export function SettingsView({
   dataOverview,
   profile,
   activeGoal,
+  isCareerSeeker,
 }: {
   account: Fetched<AccountRead>;
   subscription: Fetched<SubscriptionRead>;
@@ -66,6 +67,10 @@ export function SettingsView({
   dataOverview: Fetched<DataOverviewRead>;
   profile: Fetched<ProfileRead>;
   activeGoal: Fetched<GoalRead>;
+  /** Profile & Goal are Student/Graduate concepts — a Company/Service
+   * Provider account never has either, so that card (and the "clear
+   * profile data" action, which would just 403 for them) don't apply. */
+  isCareerSeeker: boolean;
 }) {
   const { t } = useTranslations();
   const { getToken } = useAuth();
@@ -187,7 +192,7 @@ export function SettingsView({
         {statusAnnouncement}
       </p>
 
-      <ProfileGoalCard profile={profile} activeGoal={activeGoal} />
+      {isCareerSeeker && <ProfileGoalCard profile={profile} activeGoal={activeGoal} />}
       <AccountCard account={account} />
       <SubscriptionCard
         sub={sub}
@@ -206,7 +211,13 @@ export function SettingsView({
         onToggle={handleToggleCategory}
       />
       <PreferencesCard />
-      <PrivacyCard overview={overview} error={dataOverview.error} clearing={clearing} onClearClick={() => setClearDialogOpen(true)} />
+      <PrivacyCard
+        overview={overview}
+        error={dataOverview.error}
+        clearing={clearing}
+        onClearClick={() => setClearDialogOpen(true)}
+        showClearProfileData={isCareerSeeker}
+      />
       <SecurityCard onSignOut={() => signOut(() => router.push("/"))} />
       <DangerZoneCard
         account={account.data}
@@ -568,11 +579,13 @@ function PrivacyCard({
   error,
   clearing,
   onClearClick,
+  showClearProfileData,
 }: {
   overview: DataOverviewRead | null;
   error: string | null;
   clearing: boolean;
   onClearClick: () => void;
+  showClearProfileData: boolean;
 }) {
   const { t } = useTranslations();
 
@@ -603,15 +616,18 @@ function PrivacyCard({
           {t("settings.privacy.policyLink")}
         </Link>
 
-        <Separator />
-
-        <div>
-          <h3 className="mb-1 text-small font-medium text-foreground">{t("settings.privacy.clearTitle")}</h3>
-          <p className="mb-3 text-caption text-muted-foreground">{t("settings.privacy.clearDescription")}</p>
-          <Button variant="outline" size="sm" disabled={clearing} isLoading={clearing} onClick={onClearClick}>
-            {clearing ? t("settings.privacy.clearing") : t("settings.privacy.clearAction")}
-          </Button>
-        </div>
+        {showClearProfileData && (
+          <>
+            <Separator />
+            <div>
+              <h3 className="mb-1 text-small font-medium text-foreground">{t("settings.privacy.clearTitle")}</h3>
+              <p className="mb-3 text-caption text-muted-foreground">{t("settings.privacy.clearDescription")}</p>
+              <Button variant="outline" size="sm" disabled={clearing} isLoading={clearing} onClick={onClearClick}>
+                {clearing ? t("settings.privacy.clearing") : t("settings.privacy.clearAction")}
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

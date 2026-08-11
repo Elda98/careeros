@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
+import { AppShell } from "@/components/shell/app-shell";
+import { PROVIDER_NAV_GROUPS } from "@/components/shell/nav-config";
 import { apiFetch } from "@/lib/api";
 import type { AccountTypeRead, ServiceListingRead, ServiceProviderProfileRead } from "@/lib/types";
 
@@ -37,5 +39,9 @@ export default async function ProviderDashboardPage() {
     redirect(redirectTarget);
   }
 
-  return <ProviderDashboardView profile={profile} services={services} />;
+  return (
+    <AppShell navGroups={PROVIDER_NAV_GROUPS} homeHref="/provider">
+      <ProviderDashboardView profile={profile} services={services} />
+    </AppShell>
+  );
 }

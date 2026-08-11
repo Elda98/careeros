@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import type { CVFeedbackRoundRead } from "@/lib/types";
 
 import { CVFeedbackView } from "./cv-feedback-view";
@@ -16,6 +17,13 @@ export default async function CVFeedbackPage() {
   // before any Suspense boundary is returned.
   if (!token) {
     redirect("/sign-in");
+  }
+
+  // CV Feedback is Student/Graduate-only server-side now — see
+  // skill-gap-analysis/page.tsx for the same guard and why it exists.
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   return (

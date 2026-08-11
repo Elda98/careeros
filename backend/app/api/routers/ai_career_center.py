@@ -5,6 +5,11 @@ Owns Skill-Gap Analysis, Roadmap, and CV/Profile Feedback Round exclusively
 agents in `careeros_ai`, matching SAS Part II §11's Intelligence <-> Knowledge
 contract: this router reads Profile/Goal (owned elsewhere), calls an agent,
 and persists only the entity that agent owns.
+
+Like Profile/Goal, every entity here (Skill-Gap Analysis, Roadmap, CV
+Feedback) only makes sense for a Student/Graduate career seeker — a
+Company/Service Provider account has no Profile to analyze against. Gated
+to STUDENT/GRADUATE via `require_account_type`, same as profiles.py.
 """
 
 from __future__ import annotations
@@ -18,16 +23,17 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import (
     get_career_supervisor,
-    get_current_user,
     get_cv_feedback_agent,
     get_db,
     get_explainability_llm,
     get_roadmap_agent,
     get_skill_gap_analysis_agent,
+    require_account_type,
 )
 from app.core.rate_limit import career_plan_start_limiter, cv_feedback_submit_limiter, skill_gap_refresh_limiter
 from app.core.security import PromptInjectionDetected, sanitize_free_text
 from app.db.models import (
+    AccountType,
     CVFeedbackItem,
     CVFeedbackRound,
     Goal,
@@ -71,6 +77,7 @@ from careeros_ai.knowledge.contracts import (
 from careeros_ai.orchestration.supervisor import CareerSupervisor
 
 router = APIRouter(prefix="/ai-career-center", tags=["ai-career-center"])
+_CAREER_SEEKER = require_account_type(AccountType.STUDENT, AccountType.GRADUATE)
 
 _ANALYSIS_LOAD = selectinload(SkillGapAnalysis.gaps)
 _ROADMAP_LOAD = selectinload(Roadmap.items)
@@ -179,7 +186,7 @@ async def _generate_roadmap(
 
 @router.post("/skill-gap-analysis/refresh", response_model=SkillGapAnalysisRead)
 async def refresh_skill_gap_analysis(
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     skill_gap_agent: SkillGapAnalysisAgent = Depends(get_skill_gap_analysis_agent),
     roadmap_agent: RoadmapAgent = Depends(get_roadmap_agent),
@@ -275,7 +282,7 @@ async def refresh_skill_gap_analysis(
 
 @router.post("/career-plan/start", response_model=CareerPlanStatusRead)
 async def start_career_plan(
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     supervisor: CareerSupervisor = Depends(get_career_supervisor),
     _rate_limit: None = Depends(career_plan_start_limiter),
@@ -352,7 +359,7 @@ async def start_career_plan(
 @router.post("/career-plan/approve", response_model=CareerPlanStatusRead)
 async def approve_career_plan(
     body: CareerPlanApprovalRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     supervisor: CareerSupervisor = Depends(get_career_supervisor),
 ) -> CareerPlanStatusRead:
@@ -387,7 +394,7 @@ async def approve_career_plan(
 @router.post("/career-plan/reject", response_model=CareerPlanStatusRead)
 async def reject_career_plan(
     body: CareerPlanApprovalRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     supervisor: CareerSupervisor = Depends(get_career_supervisor),
 ) -> CareerPlanStatusRead:
@@ -407,7 +414,7 @@ async def reject_career_plan(
 
 @router.get("/skill-gap-analysis/current", response_model=SkillGapAnalysisRead)
 async def get_current_skill_gap_analysis(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> SkillGapAnalysis:
     analysis = await _latest_analysis(db, user.id)
     if analysis is None:
@@ -417,7 +424,7 @@ async def get_current_skill_gap_analysis(
 
 @router.get("/skill-gap-analysis/history", response_model=list[SkillGapAnalysisRead])
 async def get_skill_gap_analysis_history(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> list[SkillGapAnalysis]:
     """FR-AICC-19/20, BR-PROG-1: chronological record, not only current state."""
     result = await db.execute(
@@ -431,7 +438,7 @@ async def get_skill_gap_analysis_history(
 
 @router.get("/roadmap/current", response_model=RoadmapRead)
 async def get_current_roadmap(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> Roadmap:
     roadmap = await _latest_roadmap(db, user.id)
     if roadmap is None:
@@ -443,7 +450,7 @@ async def get_current_roadmap(
 async def update_roadmap_item_status(
     item_id: UUID,
     body: RoadmapItemStatusUpdate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
 ) -> RoadmapItemStatusUpdate:
     """SAS Part IV §21.3 — User Override of an AI Recommendation. This is
@@ -467,7 +474,7 @@ async def update_roadmap_item_status(
 @router.post("/cv-feedback", response_model=CVFeedbackRoundRead, status_code=status.HTTP_201_CREATED)
 async def submit_cv_feedback(
     body: CVFeedbackSubmitRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     agent: CVFeedbackAgent = Depends(get_cv_feedback_agent),
     _rate_limit: None = Depends(cv_feedback_submit_limiter),
@@ -532,7 +539,7 @@ async def submit_cv_feedback(
 
 @router.get("/cv-feedback", response_model=list[CVFeedbackRoundRead])
 async def list_cv_feedback_rounds(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    user: User = Depends(_CAREER_SEEKER), db: AsyncSession = Depends(get_db)
 ) -> list[CVFeedbackRound]:
     """FR-AICC-18: view previous rounds, not only the most recent."""
     result = await db.execute(
@@ -547,7 +554,7 @@ async def list_cv_feedback_rounds(
 @router.delete("/cv-feedback/{round_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_cv_feedback_round(
     round_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """FR-SET-3, BR-DATA-3: delete one specific stored CV Feedback Round,
@@ -585,7 +592,7 @@ async def delete_cv_feedback_round(
 @router.get("/skill-gap-analysis/gaps/{gap_id}/explain", response_model=ExplanationRead)
 async def explain_skill_gap_item(
     gap_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     llm=Depends(get_explainability_llm),
 ) -> ExplanationRead:
@@ -623,7 +630,7 @@ async def explain_skill_gap_item(
 @router.get("/roadmap/items/{item_id}/explain", response_model=ExplanationRead)
 async def explain_roadmap_item(
     item_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     llm=Depends(get_explainability_llm),
 ) -> ExplanationRead:
@@ -663,7 +670,7 @@ async def explain_roadmap_item(
 @router.get("/cv-feedback/items/{item_id}/explain", response_model=ExplanationRead)
 async def explain_cv_feedback_item(
     item_id: UUID,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_CAREER_SEEKER),
     db: AsyncSession = Depends(get_db),
     llm=Depends(get_explainability_llm),
 ) -> ExplanationRead:

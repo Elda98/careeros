@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api.deps import get_current_user_id
@@ -5,9 +6,34 @@ from app.main import app
 from tests.conftest import TEST_CLERK_USER_ID
 
 
+@pytest.fixture(autouse=True)
+def _student_role(client: TestClient) -> None:
+    """Skill-Gap Analysis/Roadmap/CV Feedback are now gated to
+    STUDENT/GRADUATE, same as Profile/Goal — every test here exercises
+    that career-seeker surface."""
+    client.put("/account/type", json={"account_type": "student"})
+
+
 def _complete_onboarding_bar(client: TestClient) -> None:
     client.patch("/profile", json={"background": "BSc CS", "skills": ["Python"]})
     client.post("/profile/goals", json={"target_role": "Backend Engineer"})
+
+
+@pytest.mark.parametrize("account_type", ["company", "service_provider"])
+def test_ai_career_center_rejects_non_career_seeker_roles(client: TestClient, account_type: str) -> None:
+    """A Company/Service Provider has no Profile to analyze — Skill-Gap
+    Analysis, Roadmap, and CV Feedback must reject them server-side, not
+    merely have the entry points hidden in the frontend."""
+    app.dependency_overrides[get_current_user_id] = lambda: f"user_{account_type}_role_test"
+    try:
+        client.put("/account/type", json={"account_type": account_type})
+        assert client.post("/ai-career-center/skill-gap-analysis/refresh").status_code == 403
+        assert client.get("/ai-career-center/skill-gap-analysis/current").status_code == 403
+        assert client.get("/ai-career-center/roadmap/current").status_code == 403
+        assert client.post("/ai-career-center/cv-feedback", json={"document_text": "x"}).status_code == 403
+        assert client.get("/ai-career-center/cv-feedback").status_code == 403
+    finally:
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_CLERK_USER_ID
 
 
 def test_refresh_below_hard_bar_returns_400_with_missing_fields(client: TestClient) -> None:
@@ -204,6 +230,11 @@ def test_cannot_explain_another_users_roadmap_item(client: TestClient) -> None:
 
     app.dependency_overrides[get_current_user_id] = lambda: "user_someone_else"
     try:
+        # Needs a role too — the endpoint itself is career-seeker-gated
+        # regardless of whose item is being requested; this proves the 404
+        # comes from the IDOR check, not from a role rejection that would
+        # also happen to be 4xx.
+        client.put("/account/type", json={"account_type": "student"})
         response = client.get(f"/ai-career-center/roadmap/items/{item_id}/explain")
     finally:
         app.dependency_overrides[get_current_user_id] = lambda: TEST_CLERK_USER_ID

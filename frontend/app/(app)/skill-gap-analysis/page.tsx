@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, apiFetch } from "@/lib/api";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import type { ServiceListingWithProviderRead, SkillGapAnalysisRead } from "@/lib/types";
 
 import { SkillGapAnalysisView } from "./skill-gap-analysis-view";
@@ -17,6 +18,14 @@ export default async function SkillGapAnalysisPage() {
   // below is an inline Suspense rather than a route-level loading.tsx.
   if (!token) {
     redirect("/sign-in");
+  }
+
+  // Skill-Gap Analysis is Student/Graduate-only server-side now — send a
+  // Company/Service Provider account to their own Home instead of letting
+  // this page's fetch surface a raw 403 as a generic load error.
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   return (

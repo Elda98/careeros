@@ -1,16 +1,15 @@
 import { HandHeart } from "lucide-react";
 
-import { Logo } from "@/components/logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ServiceListingRead, ServiceProviderProfileRead } from "@/lib/types";
 
 import { ProviderDashboardClient } from "./provider-dashboard-client";
 import { ProviderServicesPanel } from "./provider-services-panel";
 
-/** The Service Provider persona's own landing surface — same reasoning as
- * CompanyDashboardView: not the (app) Sidebar shell, a real minimal
- * dashboard showing the provider's actual saved profile plus their own
- * service listings. */
+/** The Service Provider persona's own Home — same reasoning as
+ * CompanyDashboardView: rendered inside the shared AppShell with its own
+ * short nav (PROVIDER_NAV_GROUPS), showing the provider's actual saved
+ * profile plus their own service listings. */
 export function ProviderDashboardView({
   profile,
   services,
@@ -19,11 +18,7 @@ export function ProviderDashboardView({
   services: ServiceListingRead[];
 }) {
   return (
-    <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-3xl px-6 py-12 sm:px-8">
-      <div className="mb-8 flex items-center gap-3">
-        <Logo size={32} />
-      </div>
-
+    <div className="mx-auto max-w-3xl px-6 py-8 sm:px-8">
       <ProviderDashboardClient name={profile?.professional_title ?? ""} />
 
       <Card className="mt-6 animate-fade-in">
@@ -58,6 +53,6 @@ export function ProviderDashboardView({
       </Card>
 
       <ProviderServicesPanel initialServices={services} />
-    </main>
+    </div>
   );
 }

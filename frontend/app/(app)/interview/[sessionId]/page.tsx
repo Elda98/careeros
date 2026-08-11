@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 import { ApiError, apiFetch } from "@/lib/api";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import type { InterviewSessionDetailRead, InterviewSessionReportRead } from "@/lib/types";
 
 import { InterviewSessionView } from "./interview-session-view";
@@ -12,6 +13,11 @@ export default async function InterviewSessionPage({ params }: { params: Promise
   const token = await getToken();
   if (!token) {
     redirect("/sign-in");
+  }
+
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   let session: InterviewSessionDetailRead | null = null;

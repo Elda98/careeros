@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
+import { AppShell } from "@/components/shell/app-shell";
+import { COMPANY_NAV_GROUPS } from "@/components/shell/nav-config";
 import { apiFetch } from "@/lib/api";
 import type { AccountTypeRead, CompanyProfileRead, JobOpportunityRead } from "@/lib/types";
 
@@ -37,5 +39,9 @@ export default async function CompanyDashboardPage() {
     redirect(redirectTarget);
   }
 
-  return <CompanyDashboardView profile={profile} opportunities={opportunities} />;
+  return (
+    <AppShell navGroups={COMPANY_NAV_GROUPS} homeHref="/company">
+      <CompanyDashboardView profile={profile} opportunities={opportunities} />
+    </AppShell>
+  );
 }

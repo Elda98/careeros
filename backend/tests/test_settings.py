@@ -1,8 +1,16 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api.deps import get_clerk_admin_client
 from app.main import app
 from tests.fake_agents import FailingClerkAdminClient, FakeClerkAdminClient
+
+
+@pytest.fixture(autouse=True)
+def _student_role(client: TestClient) -> None:
+    """Several tests here touch the now career-seeker-gated Profile/AI
+    Career Center endpoints; harmless for the tests that don't."""
+    client.put("/account/type", json={"account_type": "student"})
 
 
 def _complete_onboarding_bar(client: TestClient) -> None:
@@ -44,7 +52,11 @@ def test_delete_account_removes_clerk_identity_and_all_local_data(client: TestCl
     # A fresh request re-provisions a brand new user row (deps.py creates one
     # on first sight of an unrecognized Clerk id) — so the profile/goal/
     # subscription state must all read back as empty, proving the old rows
-    # (and everything that referenced them) are actually gone.
+    # (and everything that referenced them) are actually gone. The new row
+    # also has no account_type yet (that was deleted along with everything
+    # else), so it must be re-assigned before touching the now-gated
+    # Profile endpoints again.
+    client.put("/account/type", json={"account_type": "student"})
     assert client.get("/profile").json()["background"] == ""
     assert client.get("/profile/goals").json() == []
     assert client.get("/settings/data").json()["skill_gap_analyses_count"] == 0

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { Logo } from "@/components/logo";
-import { NAV_GROUPS } from "@/components/shell/nav-config";
+import { NAV_GROUPS, type NavGroup } from "@/components/shell/nav-config";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/locale-provider";
 import { cn } from "@/lib/utils";
@@ -14,9 +14,14 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
   mobileOpen: boolean;
   onMobileClose: () => void;
+  /** Defaults to the Student/Graduate nav — Company/Provider pass their
+   * own shorter set (see nav-config.ts's navGroupsForAccountType). */
+  navGroups?: NavGroup[];
+  /** Where the logo links to — each persona's own Home. */
+  homeHref?: string;
 }
 
-export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+export function Sidebar({ mobileOpen, onMobileClose, navGroups = NAV_GROUPS, homeHref = "/dashboard" }: SidebarProps) {
   const pathname = usePathname();
   const { t } = useTranslations();
 
@@ -53,7 +58,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         aria-label={t("common.primaryNavigation")}
       >
         <div className="flex h-14 shrink-0 items-center justify-between px-4">
-          <Link href="/dashboard" className="rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Link href={homeHref} className="rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Logo size={24} />
           </Link>
           <Button
@@ -68,7 +73,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         </div>
 
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-2">
-          {NAV_GROUPS.map((group, groupIndex) => (
+          {navGroups.map((group, groupIndex) => (
             <div key={group.labelKey ?? `group-${groupIndex}`} className="space-y-0.5">
               {group.labelKey && (
                 <p className="px-3 pb-1 pt-2 text-caption font-semibold uppercase tracking-wide text-sidebar-foreground/60">

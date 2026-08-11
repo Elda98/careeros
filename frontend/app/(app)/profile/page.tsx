@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { careerSeekerRedirectTarget } from "@/lib/role-routing";
 import { fetchSection } from "@/lib/server-fetch";
 import type { GoalRead, OnboardingStatusRead, ProfileRead } from "@/lib/types";
 
@@ -16,6 +17,13 @@ export default async function ProfilePage() {
   // before any Suspense boundary is returned.
   if (!token) {
     redirect("/sign-in");
+  }
+
+  // Profile & Goal is Student/Graduate-only server-side now — see
+  // skill-gap-analysis/page.tsx for the same guard and why it exists.
+  const redirectTarget = await careerSeekerRedirectTarget(token);
+  if (redirectTarget) {
+    redirect(redirectTarget);
   }
 
   return (
